@@ -231,9 +231,9 @@
         }
         .gift-wrapper {
             position: relative;
-            margin: 15px auto; /* === পরিবর্তন করা হয়েছে === */
+            margin: 15px auto;
             width: 350px;
-            height: auto; /* === পরিবর্তন করা হয়েছে === */
+            height: auto; 
             perspective: 1000px;
             cursor: pointer;
         }
@@ -329,6 +329,10 @@
             padding: 20px;
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
+        }
+        /* === নতুন এবং চূড়ান্ত সমাধান === */
+        .gift-wrapper.revealed .gift-box {
+            display: none;
         }
         .gift-wrapper.revealed .gift-content-revealed {
             position: static;
