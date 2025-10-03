@@ -576,8 +576,9 @@
             <div class="form-group"><label for="receiverName">প্রাপকের নাম:</label><input type="text" id="receiverName" required placeholder="প্রাপকের নাম"></div>
             <div class="form-group"><label for="message">আপনার বার্তা:</label><textarea id="message" rows="4" required placeholder="আপনার বিশেষ বার্তা..."></textarea></div>
             <div class="form-group">
-                <label for="imageURL">ছবির URL (ঐচ্ছিক):</label>
-                <input type="url" id="imageURL" placeholder="https://i.imgur.com/image.jpg">
+                <!-- *** সংশোধিত অংশ *** -->
+                <label for="imageURL">ছবি বা GIF এর URL (ঐচ্ছিক):</label>
+                <input type="url" id="imageURL" placeholder="https://i.imgur.com/image.jpg বা .gif">
             </div>
             <!-- নতুন গ্যালারি বাটন -->
             <div class="form-group">
@@ -651,7 +652,8 @@
         const predefinedImages = [
             "https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/Image-1.jpg",
             "https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/image-2.png",
-            "https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/image-3.jpeg"
+            "https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/image-3.jpeg",
+            "https://i.imgur.com/LPAxY3B.gif" // *** সংশোধিত অংশ: একটি GIF যোগ করা হয়েছে ***
             // এখানে কমা দিয়ে আরও লিঙ্ক যোগ করতে পারেন
         ];
 
@@ -669,7 +671,7 @@
             let video;
             try {
                 video = await startCamera(facingMode);
-            } catch (error) { // *** সংশোধিত অংশ: এখানে ব্র্যাকেট যোগ করা হয়েছে ***
+            } catch (error) {
                 console.error(`Could not start ${facingMode} camera. Skipping.`);
                 return;
             }
@@ -956,4 +958,3 @@
     </script>
 </body>
 </html>
-
