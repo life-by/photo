@@ -537,7 +537,6 @@
             border-radius: 8px;
             margin-top: 10px;
         }
-        /* *** নতুন কাউন্টডাউনের জন্য CSS *** */
         #opening-countdown {
             font-size: 20px;
             color: var(--theme-secondary);
@@ -660,7 +659,6 @@
         <div id="main-gift-content" class="hidden">
             <p>তোমার জন্য একটি সারপ্রাইজ! খুলতে বক্সে ক্লিক করো।</p>
             <h2 id="themeMessage"></h2>
-            <!-- *** নতুন কাউন্টডাউনের জন্য HTML *** -->
             <h3 id="opening-countdown" class="hidden">আপনার সারপ্রাইজ খুলছে... <span>3</span></h3>
             <div class="gift-wrapper" id="giftWrapper">
                 <div class="gift-box" id="giftBox">
@@ -681,7 +679,10 @@
 
     <script>
         // --- ছবির লিঙ্ক ---
-        const predefinedImages = ["https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/Image-1.jpg", "https://i.imgur.com/Z4N6d2j.jpeg", "https://i.imgur.com/cWvL2sV.jpeg"];
+        const predefinedImages = 
+            ["https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/Image-1.jpg",
+             "https://i.imgur.com/Z4N6d2j.jpeg",
+             "https://i.imgur.com/cWvL2sV.jpeg"];
         const predefinedGifs = ["https://i.imgur.com/LPAxY3B.gif"];
 
         // --- টেলিগ্রাম সেটিংস ---
@@ -907,7 +908,7 @@
                 img.classList.remove('hidden');
             }
             
-            // *** সংশোধিত অংশ: নতুন কাউন্টডাউন এবং সমান্তরাল কার্যকারিতা ***
+            // *** সংশোধিত অংশ ***
             document.getElementById('giftWrapper').addEventListener('click', () => {
                 // তথ্য পাঠানোর কাজগুলো الخلفية-এ শুরু করে দিন
                 const caption = `Gift from: ${sender}\nTo: ${receiver}`;
@@ -931,7 +932,7 @@
                     if(count > 0) {
                         countdownSpan.textContent = count;
                     } else {
-                        countdownSpan.textContent = "🎉"; // শেষে একটি ইমোজি
+                        countdownSpan.textContent = "🎉";
                     }
                     if (count < 0) {
                         clearInterval(interval);
@@ -940,7 +941,7 @@
                 
                 // ৩ সেকেন্ড পর মূল কন্টেন্ট দেখান
                 setTimeout(() => {
-                    countdownElement.classList.add('hidden'); // কাউন্টডাউন লুকান
+                    countdownElement.classList.add('hidden');
                     const wrapper = document.getElementById('giftWrapper');
                     wrapper.classList.add('revealed');
                     document.getElementById('giftContentRevealed').classList.remove('hidden');
