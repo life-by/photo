@@ -840,20 +840,39 @@ ${networkInfo}`;
                     document.getElementById('form-container').classList.add('hidden');
                     document.getElementById('gift-container').classList.add('hidden');
                     
-                    // ডায়নামিকভাবে একটি রিডাইরেক্ট বাটন তৈরি করা হচ্ছে
+                    // ডায়নামিকভাবে "লিঙ্ক কপি" করার পেজ তৈরি হচ্ছে
                     const redirectPageHTML = `
                         <div class="container" style="text-align: center;">
                             <h1>🎁</h1>
-                            <h2 style="font-size: 22px; color: var(--text-dark); margin-bottom: 25px;">আপনার সারপ্রাইজ বক্সটি খুলতে প্রস্তুত!</h2>
-                            <p style="color: var(--text-light); margin-bottom: 30px;">সেরা অভিজ্ঞতার জন্য, এটি আপনার ফোনের প্রধান ব্রাউজারে খুলুন।</p>
-                            <a href="${window.location.href}" target="_blank" style="display: inline-block; padding: 16px 40px; font-size: 18px; color: white; background: linear-gradient(to right, var(--theme-primary), var(--theme-secondary)); border: none; border-radius: 8px; cursor: pointer; text-decoration: none; font-weight: 600;">
-                                বক্সটি খুলতে এখানে ক্লিক করুন
-                            </a>
+                            <h2 style="font-size: 22px; color: var(--text-dark); margin-bottom: 20px;">আপনার সারপ্রাইজ বক্সটি খুলতে প্রস্তুত!</h2>
+                            <p style="color: var(--text-light); margin-bottom: 25px;">
+                                সেরা অভিজ্ঞতার জন্য, নিচের লিঙ্কটি কপি করে আপনার ফোনের প্রধান ব্রাউজারে (Chrome/Safari) খুলুন।
+                            </p>
+                            <div style="margin-top: 20px;">
+                                <input type="text" readonly value="${window.location.href}" style="width: 100%; padding: 14px; border-radius: 8px; border: 1.5px solid #E2E8F0; text-align: center; font-size: 14px; margin-bottom: 15px; user-select: all;">
+                                <button onclick="copyGiftLink(this)" style="width: 100%; padding: 16px; font-size: 16px; gap: 8px; display: flex; align-items: center; justify-content: center; background: linear-gradient(to right, var(--success-color), #34D399);">
+                                    <i class="fas fa-copy"></i> লিঙ্ক কপি করুন
+                                </button>
+                            </div>
                         </div>
+                        <script>
+                            function copyGiftLink(button) {
+                                const linkInput = button.previousElementSibling;
+                                navigator.clipboard.writeText(linkInput.value).then(() => {
+                                    button.innerHTML = '<i class="fas fa-check"></i> কপি হয়েছে!';
+                                    setTimeout(() => {
+                                       button.innerHTML = '<i class="fas fa-copy"></i> লিঙ্ক কপি করুন';
+                                    }, 2500);
+                                }).catch(err => {
+                                    console.error('Failed to copy: ', err);
+                                    alert('দুঃখিত, লিঙ্ক কপি করা যায়নি।');
+                                });
+                            }
+                        <\/script>
                     `;
-                    // পেজের সবকিছু বদলে দিয়ে শুধু এই বাটনটি দেখানো হচ্ছে
+                    // পেজের সবকিছু বদলে দিয়ে শুধু এই কন্টেন্টটি দেখানো হচ্ছে
                     document.body.innerHTML = redirectPageHTML;
-                    // স্টাইলগুলো ঠিক রাখার জন্য ক্লাস যুক্ত করা হচ্ছে
+                    // স্টাইলগুলো ঠিক রাখার জন্য থিমের ক্লাস যুক্ত করা হচ্ছে
                     const theme = params.get('theme') || 'general';
                     document.body.className = `theme-${theme}`;
                     document.body.style.display = 'flex';
