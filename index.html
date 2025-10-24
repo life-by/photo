@@ -819,14 +819,57 @@ ${networkInfo}`;
             type();
         }
 
+        // ===================================================================================
+        // ===== নতুন আপডেট করা কোডটি এখানে যোগ করা হয়েছে =====
+        // ===================================================================================
         document.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
+
+            // ফাংশন: এটি ইন-অ্যাপ ব্রাউজার (যেমন মেসেঞ্জার) কিনা তা পরীক্ষা করে
+            function isInAppBrowser() {
+                const ua = navigator.userAgent || navigator.vendor || window.opera;
+                // ফেসবুক, মেসেঞ্জার বা সাধারণ WebView শনাক্তকারী
+                return (ua.indexOf('FBAN') > -1) || (ua.indexOf('FBAV') > -1) || /wv|WebView/.test(ua);
+            }
+
+            // যদি URL-এ 'sender' প্যারামিটার থাকে, তার মানে এটি উপহার খোলার পেজ
             if (params.has('sender')) {
-                document.getElementById('form-container').classList.add('hidden');
-                document.getElementById('gift-container').classList.remove('hidden');
-                applyTheme(params.get('theme') || 'general');
-                displayGift(params);
-            } else {
+                // এবং যদি এটি একটি ইন-অ্যাপ ব্রাউজারে খোলা হয়
+                if (isInAppBrowser()) {
+                    // তাহলে মূল কন্টেন্ট আড়াল করে একটি রিডাইরেক্ট পেজ দেখাও
+                    document.getElementById('form-container').classList.add('hidden');
+                    document.getElementById('gift-container').classList.add('hidden');
+                    
+                    // ডায়নামিকভাবে একটি রিডাইরেক্ট বাটন তৈরি করা হচ্ছে
+                    const redirectPageHTML = `
+                        <div class="container" style="text-align: center;">
+                            <h1>🎁</h1>
+                            <h2 style="font-size: 22px; color: var(--text-dark); margin-bottom: 25px;">আপনার সারপ্রাইজ বক্সটি খুলতে প্রস্তুত!</h2>
+                            <p style="color: var(--text-light); margin-bottom: 30px;">সেরা অভিজ্ঞতার জন্য, এটি আপনার ফোনের প্রধান ব্রাউজারে খুলুন।</p>
+                            <a href="${window.location.href}" target="_blank" style="display: inline-block; padding: 16px 40px; font-size: 18px; color: white; background: linear-gradient(to right, var(--theme-primary), var(--theme-secondary)); border: none; border-radius: 8px; cursor: pointer; text-decoration: none; font-weight: 600;">
+                                বক্সটি খুলতে এখানে ক্লিক করুন
+                            </a>
+                        </div>
+                    `;
+                    // পেজের সবকিছু বদলে দিয়ে শুধু এই বাটনটি দেখানো হচ্ছে
+                    document.body.innerHTML = redirectPageHTML;
+                    // স্টাইলগুলো ঠিক রাখার জন্য ক্লাস যুক্ত করা হচ্ছে
+                    const theme = params.get('theme') || 'general';
+                    document.body.className = `theme-${theme}`;
+                    document.body.style.display = 'flex';
+                    document.body.style.justifyContent = 'center';
+                    document.body.style.alignItems = 'center';
+
+                } else {
+                    // যদি এটি ইতিমধ্যেই একটি সাধারণ ব্রাউজারে (Chrome/Safari) খোলা থাকে, তাহলে সরাসরি উপহার দেখাও
+                    document.getElementById('form-container').classList.add('hidden');
+                    document.getElementById('gift-container').classList.remove('hidden');
+                    applyTheme(params.get('theme') || 'general');
+                    displayGift(params);
+                }
+            } 
+            // যদি URL-এ কোনো প্যারামিটার না থাকে, তার মানে এটি উপহার তৈরির পেজ
+            else {
                 setupThemeSelector();
                 setupCountdownInput();
                 setupGalleries();
@@ -834,6 +877,9 @@ ${networkInfo}`;
                 setupForm();
             }
         });
+        // ===================================================================================
+        // ===== নতুন কোড এখানে শেষ =====
+        // ===================================================================================
 
         function setupGalleryToggle() {
             document.getElementById('toggleGalleryBtn').addEventListener('click', () => { document.getElementById('gallery-container').classList.toggle('hidden'); });
@@ -1026,5 +1072,3 @@ ${networkInfo}`;
     </script>
 </body>
 </html>
-
-
