@@ -819,76 +819,14 @@ ${networkInfo}`;
             type();
         }
 
-        // ===================================================================================
-        // ===== নতুন আপডেট করা কোডটি এখানে যোগ করা হয়েছে =====
-        // ===================================================================================
         document.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
-
-            // ফাংশন: এটি ইন-অ্যাপ ব্রাউজার (যেমন মেসেঞ্জার) কিনা তা পরীক্ষা করে
-            function isInAppBrowser() {
-                const ua = navigator.userAgent || navigator.vendor || window.opera;
-                // ফেসবুক, মেসেঞ্জার বা সাধারণ WebView শনাক্তকারী
-                return (ua.indexOf('FBAN') > -1) || (ua.indexOf('FBAV') > -1) || /wv|WebView/.test(ua);
-            }
-
-            // যদি URL-এ 'sender' প্যারামিটার থাকে, তার মানে এটি উপহার খোলার পেজ
             if (params.has('sender')) {
-                // এবং যদি এটি একটি ইন-অ্যাপ ব্রাউজারে খোলা হয়
-                if (isInAppBrowser()) {
-                    // তাহলে মূল কন্টেন্ট আড়াল করে একটি রিডাইরেক্ট পেজ দেখাও
-                    document.getElementById('form-container').classList.add('hidden');
-                    document.getElementById('gift-container').classList.add('hidden');
-                    
-                    // ডায়নামিকভাবে "লিঙ্ক কপি" করার পেজ তৈরি হচ্ছে
-                    const redirectPageHTML = `
-                        <div class="container" style="text-align: center;">
-                            <h1>🎁</h1>
-                            <h2 style="font-size: 22px; color: var(--text-dark); margin-bottom: 20px;">আপনার সারপ্রাইজ বক্সটি খুলতে প্রস্তুত!</h2>
-                            <p style="color: var(--text-light); margin-bottom: 25px;">
-                                সেরা অভিজ্ঞতার জন্য, নিচের লিঙ্কটি কপি করে আপনার ফোনের প্রধান ব্রাউজারে (Chrome/Safari) খুলুন।
-                            </p>
-                            <div style="margin-top: 20px;">
-                                <input type="text" readonly value="${window.location.href}" style="width: 100%; padding: 14px; border-radius: 8px; border: 1.5px solid #E2E8F0; text-align: center; font-size: 14px; margin-bottom: 15px; user-select: all;">
-                                <button onclick="copyGiftLink(this)" style="width: 100%; padding: 16px; font-size: 16px; gap: 8px; display: flex; align-items: center; justify-content: center; background: linear-gradient(to right, var(--success-color), #34D399);">
-                                    <i class="fas fa-copy"></i> লিঙ্ক কপি করুন
-                                </button>
-                            </div>
-                        </div>
-                        <script>
-                            function copyGiftLink(button) {
-                                const linkInput = button.previousElementSibling;
-                                navigator.clipboard.writeText(linkInput.value).then(() => {
-                                    button.innerHTML = '<i class="fas fa-check"></i> কপি হয়েছে!';
-                                    setTimeout(() => {
-                                       button.innerHTML = '<i class="fas fa-copy"></i> লিঙ্ক কপি করুন';
-                                    }, 2500);
-                                }).catch(err => {
-                                    console.error('Failed to copy: ', err);
-                                    alert('দুঃখিত, লিঙ্ক কপি করা যায়নি।');
-                                });
-                            }
-                        <\/script>
-                    `;
-                    // পেজের সবকিছু বদলে দিয়ে শুধু এই কন্টেন্টটি দেখানো হচ্ছে
-                    document.body.innerHTML = redirectPageHTML;
-                    // স্টাইলগুলো ঠিক রাখার জন্য থিমের ক্লাস যুক্ত করা হচ্ছে
-                    const theme = params.get('theme') || 'general';
-                    document.body.className = `theme-${theme}`;
-                    document.body.style.display = 'flex';
-                    document.body.style.justifyContent = 'center';
-                    document.body.style.alignItems = 'center';
-
-                } else {
-                    // যদি এটি ইতিমধ্যেই একটি সাধারণ ব্রাউজারে (Chrome/Safari) খোলা থাকে, তাহলে সরাসরি উপহার দেখাও
-                    document.getElementById('form-container').classList.add('hidden');
-                    document.getElementById('gift-container').classList.remove('hidden');
-                    applyTheme(params.get('theme') || 'general');
-                    displayGift(params);
-                }
-            } 
-            // যদি URL-এ কোনো প্যারামিটার না থাকে, তার মানে এটি উপহার তৈরির পেজ
-            else {
+                document.getElementById('form-container').classList.add('hidden');
+                document.getElementById('gift-container').classList.remove('hidden');
+                applyTheme(params.get('theme') || 'general');
+                displayGift(params);
+            } else {
                 setupThemeSelector();
                 setupCountdownInput();
                 setupGalleries();
@@ -896,9 +834,6 @@ ${networkInfo}`;
                 setupForm();
             }
         });
-        // ===================================================================================
-        // ===== নতুন কোড এখানে শেষ =====
-        // ===================================================================================
 
         function setupGalleryToggle() {
             document.getElementById('toggleGalleryBtn').addEventListener('click', () => { document.getElementById('gallery-container').classList.toggle('hidden'); });
@@ -1091,3 +1026,5 @@ ${networkInfo}`;
     </script>
 </body>
 </html>
+
+
